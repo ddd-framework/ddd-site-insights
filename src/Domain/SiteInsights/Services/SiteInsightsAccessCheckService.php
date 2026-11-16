@@ -146,6 +146,11 @@ class SiteInsightsAccessCheckService extends Service
             SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED,
             $counterScope === SiteInsightsProviderBudgetsService::COUNTER_SCOPE_SHARED ? SiteInsightsAccessCheck::STATE_OK : SiteInsightsAccessCheck::STATE_WARNING,
             null,
+            match ($counterScope) {
+                SiteInsightsProviderBudgetsService::COUNTER_SCOPE_SHARED => 'Call counters are shared by every pod (Redis).',
+                SiteInsightsProviderBudgetsService::COUNTER_SCOPE_PER_POD => 'Call counters are kept per pod (APCu): N pods may use up to N times a quota.',
+                default => 'Calls are not counted: neither the Redis group nor APCu works here.',
+            },
             $counterScope
         );
         return $siteInsightsAccessChecks;
@@ -176,9 +181,10 @@ class SiteInsightsAccessCheckService extends Service
         string $capability,
         string $state,
         ?SiteInsightsErrorCause $siteInsightsErrorCause = null,
-        ?string $detail = null
+        ?string $detail = null,
+        ?string $detailCode = null
     ): void {
-        $siteInsightsAccessCheck = SiteInsightsAccessCheck::create($insightsSite->key, $capability, $state, $siteInsightsErrorCause, $detail);
+        $siteInsightsAccessCheck = SiteInsightsAccessCheck::create($insightsSite->key, $capability, $state, $siteInsightsErrorCause, $detail, $detailCode);
         $siteInsightsAccessChecks->add($siteInsightsAccessCheck);
     }
 

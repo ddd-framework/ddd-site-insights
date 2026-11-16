@@ -28,6 +28,12 @@ class SearchRowsCoverage extends ValueObject
     /** @var int Rows asked per call */
     public int $rowLimitPerCall = 0;
 
+    /**
+     * @var bool The question has every row there can be: totals (no dimension) or a series asked for every day of its
+     *      window. `limitReached` and `providerRowsExhausted` are false then: nothing to qualify about the rows
+     */
+    public bool $isCompleteByConstruction = false;
+
     /** @var bool The module stopped (limit, ceiling or budget) while the last page was full */
     public bool $limitReached = false;
 

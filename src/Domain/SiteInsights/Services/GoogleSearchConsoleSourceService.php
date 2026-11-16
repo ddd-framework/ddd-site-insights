@@ -336,7 +336,8 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         $searchRowsCoverage->fetchedRows = $rowCount;
         if ($this->asksForEveryRowThereIs($googleSearchAnalyticsReport)) {
             // totals, or a series asked for every day of its window: no row can be beyond the answer
-            $searchRowsCoverage->providerRowsExhausted = true;
+            $searchRowsCoverage->isCompleteByConstruction = true;
+            $searchRowsCoverage->providerRowsExhausted = false;
             $searchRowsCoverage->limitReached = false;
         } else {
             $searchRowsCoverage->providerRowsExhausted = $rowCount < $googleSearchAnalyticsReport->rowLimit;

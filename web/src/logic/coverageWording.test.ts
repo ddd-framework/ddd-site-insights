@@ -62,3 +62,18 @@ test('the window as data', () => {
   });
   assert.equal(windowNote.text, formatWindowNote(window));
 });
+
+test('a part complete by construction gets no row note', () => {
+  for (const coverage of [
+    { fetchedRows: 1, isCompleteByConstruction: true, limitReached: false, providerRowsExhausted: false },
+    // rc.7 answers: complete parts carried providerRowsExhausted true
+    { fetchedRows: 28, isCompleteByConstruction: true, limitReached: false, providerRowsExhausted: true },
+  ]) {
+    const codes = formatCoverageNotes({ coverage }).map(note => note.code);
+    assert.ok(!codes.includes('providerRowsExhausted') && !codes.includes('limitReached'), JSON.stringify(codes));
+  }
+  assert.deepEqual(
+    formatCoverageNotes({ coverage: { fetchedRows: 3, providerRowsExhausted: true } }).map(note => note.code),
+    ['providerRowsExhausted'],
+  );
+});

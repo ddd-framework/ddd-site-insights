@@ -60,12 +60,16 @@ class SiteInsightsAccessCheck extends ValueObject
     /** @var string|null What failed or what was found (e.g. the permission level), without secrets */
     public ?string $detail;
 
+    /** @var string|null A coded detail for capabilities that have one: budgetCountersShared → shared, perPod or notCounted */
+    public ?string $detailCode;
+
     /**
      * @param string $siteKey
      * @param string $capability
      * @param string $state
      * @param SiteInsightsErrorCause|null $siteInsightsErrorCause
      * @param string|null $detail
+     * @param string|null $detailCode
      * @return static
      */
     public static function create(
@@ -73,7 +77,8 @@ class SiteInsightsAccessCheck extends ValueObject
         string $capability,
         string $state,
         ?SiteInsightsErrorCause $siteInsightsErrorCause = null,
-        ?string $detail = null
+        ?string $detail = null,
+        ?string $detailCode = null
     ): static {
         $siteInsightsAccessCheck = new static();
         $siteInsightsAccessCheck->siteKey = $siteKey;
@@ -81,6 +86,9 @@ class SiteInsightsAccessCheck extends ValueObject
         $siteInsightsAccessCheck->state = $state;
         if ($siteInsightsErrorCause !== null) {
             $siteInsightsAccessCheck->cause = $siteInsightsErrorCause->value;
+        }
+        if ($detailCode !== null) {
+            $siteInsightsAccessCheck->detailCode = $detailCode;
         }
         if ($detail !== null && $detail !== '') {
             $siteInsightsAccessCheck->detail = self::redactDetail($detail);

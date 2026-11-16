@@ -5,7 +5,7 @@ knows about your websites, readable in the admin and by agents. The module reads
 [`mgamadeus/ddd-argus`](https://github.com/ddd-framework/ddd-argus), caches the answers, stores nothing, and states in
 every answer what it covers (which days, which data state, how many rows of how many, how aggregated).
 
-Status: `0.1.0-rc.7` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
+Status: `0.1.0-rc.8` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
 coverage model, access checks), search performance (overview, lists with comparison counterparts, page groups,
 page and query detail, export), indexing (sitemap states, URL inspection) and opportunities (fixed rules that return
 candidates with their evidence).

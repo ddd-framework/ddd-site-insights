@@ -142,7 +142,10 @@ export function formatCoverageNotes(part: CoveredAnswerPart): CoverageNote[] {
   }
   const coverage = part.coverage;
   if (!coverage) return notes;
-  if (coverage.limitReached) {
+  // totals and a series of every day are complete by construction: nothing to say about their rows
+  if (coverage.isCompleteByConstruction) {
+    // no row note
+  } else if (coverage.limitReached) {
     notes.push({ code: 'limitReached', values: { fetchedRows: coverage.fetchedRows ?? 0 }, text: `More rows may exist: ${coverage.fetchedRows ?? 0} rows were fetched.` });
   } else if (coverage.providerRowsExhausted && (coverage.fetchedRows ?? 0) > 0) {
     notes.push({ code: 'providerRowsExhausted', values: {}, text: 'The provider returned fewer rows than asked; it reports top rows only.' });

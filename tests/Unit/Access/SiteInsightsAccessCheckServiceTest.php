@@ -44,7 +44,10 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
         self::assertSame('siteRestrictedUser', $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_PERMISSION_LEVEL)->detail);
         self::assertSame('verdict PASS', $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->detail);
         self::assertSame('2 sitemap file(s)', $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_SITEMAPS)->detail);
-        self::assertSame('perPod', $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED)->detail);
+        $countersCheckPerPod = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED);
+        self::assertSame('perPod', $countersCheckPerPod->detailCode);
+        self::assertStringContainsString('per pod', $countersCheckPerPod->detail, 'a readable sentence');
+        self::assertFalse(isset($siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->detailCode), 'free text only');
         self::assertSame(5, $capturingNetwork->countSentRequests());
         $sentPaths = array_map(static fn ($sentRequest) => $sentRequest->getMethod() . ' ' . $sentRequest->getUri()->getHost() . $sentRequest->getUri()->getPath(), $capturingNetwork->getSentRequests());
         self::assertSame([
@@ -81,7 +84,8 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
 
         $countersCheck = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED);
         self::assertSame(SiteInsightsAccessCheck::STATE_OK, $countersCheck->state);
-        self::assertSame('shared', $countersCheck->detail);
+        self::assertSame('shared', $countersCheck->detailCode);
+        self::assertSame('Call counters are shared by every pod (Redis).', $countersCheck->detail);
         self::assertFalse($siteInsightsAccessChecks->hasWarnings());
     }
 

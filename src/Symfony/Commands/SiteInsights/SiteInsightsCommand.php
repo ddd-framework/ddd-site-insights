@@ -336,7 +336,12 @@ abstract class SiteInsightsCommand extends Command
             '%d rows fetched (%d per call), %s, sorted by %s, aggregation %s%s, %d provider calls%s',
             $searchRowsCoverage->fetchedRows,
             $searchRowsCoverage->rowLimitPerCall,
-            $searchRowsCoverage->limitReached ? 'more rows may exist (limit reached)' : ($searchRowsCoverage->providerRowsExhausted ? 'the provider returned fewer rows than asked' : 'page full'),
+            match (true) {
+                $searchRowsCoverage->isCompleteByConstruction => 'every row there can be',
+                $searchRowsCoverage->limitReached => 'more rows may exist (limit reached)',
+                $searchRowsCoverage->providerRowsExhausted => 'the provider returned fewer rows than asked',
+                default => 'page full',
+            },
             $searchRowsCoverage->sortScope === SearchRowsCoverage::SORT_SCOPE_PROVIDER ? 'the provider' : 'the module over the fetched rows',
             $searchRowsCoverage->responseAggregation ?? '?',
             $searchRowsCoverage->responseAggregationKnown ? '' : ' (not named by the provider)',

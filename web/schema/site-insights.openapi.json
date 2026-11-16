@@ -2286,6 +2286,11 @@
                         "nullable": true,
                         "description": "What failed or what was found (e.g. the permission level), without secrets"
                     },
+                    "detailCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "A coded detail for capabilities that have one: budgetCountersShared → shared, perPod or notCounted"
+                    },
                     "objectType": {
                         "type": "string",
                         "nullable": true,
@@ -2831,6 +2836,11 @@
                         "type": "integer",
                         "default": 0,
                         "description": "Rows asked per call"
+                    },
+                    "isCompleteByConstruction": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "The question has every row there can be: totals (no dimension) or a series asked for every day of its\nwindow. `limitReached` and `providerRowsExhausted` are false then: nothing to qualify about the rows"
                     },
                     "limitReached": {
                         "type": "boolean",

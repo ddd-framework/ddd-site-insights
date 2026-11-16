@@ -51,13 +51,15 @@ class SearchCoverageAndSeriesTest extends SiteInsightsTestCase
         $overview = $this->getSearchPerformanceService()->getOverview(TestConfig::SITE_KEY, new SearchWindowRequest());
 
         foreach (['totals' => $overview->totals->coverage, 'series' => $overview->series->coverage] as $partName => $searchRowsCoverage) {
+            self::assertTrue($searchRowsCoverage->isCompleteByConstruction, $partName);
             self::assertFalse($searchRowsCoverage->limitReached, $partName);
-            self::assertTrue($searchRowsCoverage->providerRowsExhausted, $partName);
+            self::assertFalse($searchRowsCoverage->providerRowsExhausted, $partName);
         }
         self::assertSame(1, $overview->totals->coverage->fetchedRows);
         self::assertSame(28, $overview->series->coverage->fetchedRows, 'a row for every day of the window');
         self::assertTrue($overview->topQueries->coverage->limitReached, '30 rows exist, 25 asked');
         self::assertFalse($overview->topQueries->coverage->providerRowsExhausted);
+        self::assertFalse($overview->topQueries->coverage->isCompleteByConstruction);
     }
 
     public function testAFilteredSeriesFillsTheDaysWithoutARow(): void
@@ -79,6 +81,7 @@ class SearchCoverageAndSeriesTest extends SiteInsightsTestCase
             }
         }
         self::assertFalse($searchQueryDetail->series->coverage->limitReached);
+        self::assertTrue($searchQueryDetail->series->coverage->isCompleteByConstruction);
     }
 
     public function testExplicitZeroRowsOfTheProviderAreReportedAsSent(): void

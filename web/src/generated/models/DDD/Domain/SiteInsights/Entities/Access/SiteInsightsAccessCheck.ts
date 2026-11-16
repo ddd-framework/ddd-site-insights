@@ -33,6 +33,8 @@ export type SiteInsightsAccessCheck = {
   cause?: string | null;
   /** What failed or what was found (e.g. the permission level), without secrets */
   detail?: string | null;
+  /** A coded detail for capabilities that have one: budgetCountersShared → shared, perPod or notCounted */
+  detailCode?: string | null;
   /** The fully qualified class name of the object */
   objectType?: string | null;
 };

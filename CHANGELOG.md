@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-rc.8
+
+### Changed
+- Parts that are complete by construction — totals (no dimension) and a series asked for every day of its window —
+  carry the new coverage flag `isCompleteByConstruction` true, with `limitReached` and `providerRowsExhausted` both
+  false. This replaces rc.7's `providerRowsExhausted: true` on these parts. Other parts keep their flags.
+- npm: `formatCoverageNotes()` emits no row note (`limitReached`, `providerRowsExhausted`) for a part complete by
+  construction (also for an rc.7 answer that still carries `providerRowsExhausted: true` there).
+- Access check: new nullable field `detailCode` for coded details. `budgetCountersShared` puts its code there
+  (`shared`, `perPod`, `notCounted`, values unchanged), and its `detail` is a readable English sentence again.
+
 ## 0.1.0-rc.7
 
 Coverage flags, translatable view helpers, and what a screen needs without host constants.

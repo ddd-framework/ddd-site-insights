@@ -3,7 +3,7 @@ name: ddd-module-site-insights-specialist
 description: "Search Console data with ddd-site-insights: live reads through ddd-argus, cached, coverage in every answer. Covers install, config/app/SiteInsights (sites, credentials, page groups, cache, budgets, opportunity thresholds per site), search performance (overview, lists with comparison counterparts, page groups, details, export), indexing (sitemap states, URL inspection as POST: it counts against the daily quota), opportunities (striking distance, weak click rate per position bucket with all-device fallback, several pages per query, rising and declining), commands app:site-insights:sites, check-access, overview, queries, pages, countries, devices, page-groups, page, query, export, sitemaps, inspect, opportunities (--format=json or toon), npm factory createSiteInsightsApi, reading rules (Pacific Time days, notObserved, byPage, thinBaseline). Use when wiring site insights into an app, reading search, indexing or opportunity data as an agent, or on keyUnreadable, tokenRefused, notUserOfProperty, budgetRefused."
 metadata:
   author: mgamadeus
-  version: "0.1.0-rc.7"
+  version: "0.1.0-rc.8"
   module: mgamadeus/ddd-site-insights
 ---
 
@@ -113,7 +113,8 @@ whole report to its end with `export`.
 `check-access` prints states only: per site `keyReadable`, `tokenObtained`, `propertyListed`, `permissionLevel`,
 `searchAnalytics`, `sitemaps`, `urlInspection`, `budgetCountersShared` — each `ok`, `warning` (works with a limit,
 see `detail`), `failed` with `cause`, or `skipped`. `budgetCountersShared` is `ok` for `shared` and `warning` for
-`perPod` or `notCounted`; a warning does not fail the command (exit 0).
+`perPod` or `notCounted`; a warning does not fail the command (exit 0). `detail` is a readable English sentence;
+`detailCode` holds the code of capabilities that have one (`budgetCountersShared`: `shared`, `perPod`, `notCounted`).
 `export` is console only (no endpoint), never cached, needs `canExport()`, and stops at
 `budgets.callsPerOperation.export` calls with `limitReached` and `lastFinishedDay`. A page whose call fails with a
 retryable cause (`transport`, `providerFailed`, `quotaExceeded`; not `budgetRefused`) is asked again up to
@@ -218,8 +219,8 @@ carries `coverage` or `error`. Read these before a number:
   the aggregate.
 - **Rows**: Google returns top rows only. `limitReached`: the module stopped while the last page was full (more may
   exist); `providerRowsExhausted`: fewer rows than asked — not "all rows". A question that cannot have more rows —
-  totals (no dimension) and a series asked for every day of its window — is always `limitReached` false and
-  `providerRowsExhausted` true. `sortScope` `fetchedRows`: sorted within the
+  totals (no dimension) and a series asked for every day of its window — carries `isCompleteByConstruction` true, with
+  `limitReached` and `providerRowsExhausted` both false: nothing to qualify about its rows. `sortScope` `fetchedRows`: sorted within the
   `fetchedRows` fetched, not over all rows. `duplicateRowsDropped`, `counterpartChunks`, `counterpartsNotRequested`.
 - **Anonymised queries**: rows grouped or filtered by query omit them (`anonymizedQueriesOmitted`): they add up to
   less than the totals. Query × page loses rows (`joinedDimensionsMayLoseRows`).
@@ -297,7 +298,8 @@ incomplete: the batch is asked again part by part), `outsideRetention`.
 
 ## Call counters: shared or per pod
 
-`check-access` reports `budgetCountersShared` as `shared` (Redis, state `ok`) or `perPod` (APCu, state `warning`). The counters use Core's cache
+`check-access` reports `budgetCountersShared` with `detailCode` `shared` (Redis, state `ok`) or `perPod` (APCu,
+state `warning`). The counters use Core's cache
 group `REDIS_SENTINEL`: they are shared across pods only when the application configures that group, i.e.
 `CACHE_REDIS_SENTINEL_CACHE_GROUP=redisSentinel` (with `CACHE_REDIS_SENTINEL_SENTINELS`, `…_PASSWORD`, `…_NAMESPACE`)
 or `CACHE_REDIS_SENTINEL_CACHE_GROUP=redis` (with `CACHE_REDIS_SENTINEL_HOST`, `…_PORT`, `…_PASSWORD`, `…_DATABASE`).
