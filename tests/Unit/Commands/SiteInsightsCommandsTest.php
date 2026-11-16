@@ -91,7 +91,7 @@ class SiteInsightsCommandsTest extends SiteInsightsTestCase
         self::assertSame(Command::SUCCESS, $exitCode);
         $payload = json_decode($commandTester->getDisplay(), true);
         self::assertCount(8, $payload['siteInsightsAccessChecks']['elements']);
-        self::assertSame(['ok'], array_values(array_unique(array_column($payload['siteInsightsAccessChecks']['elements'], 'state'))));
+        self::assertSame(['ok', 'warning'], array_values(array_unique(array_column($payload['siteInsightsAccessChecks']['elements'], 'state'))), 'counters per pod: warning');
         $this->assertNoSecretIn($commandTester->getDisplay());
     }
 

@@ -109,6 +109,7 @@ class SearchIndexingService extends Service
         if (isset($sourceInspections->languageCode)) {
             $urlIndexInspections->languageCode = $sourceInspections->languageCode;
         }
+        $urlIndexInspections->maxInspectionUrls = $maxInspectionUrls;
         $urlIndexInspections->duplicateUrlsDropped = count($urls) - count($distinctUrls);
         $urlIndexInspections->inspectionCounterScope = $this->getSiteInsightsProviderBudgetsService()->getCounterScope();
         $urlIndexInspections->coverage = $sourceInspections->coverage;

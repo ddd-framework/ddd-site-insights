@@ -28,6 +28,9 @@ class UrlIndexInspections extends ObjectSet
     /** @var string|null Language of the provider's texts, as asked (e.g. en-US) */
     public ?string $languageCode;
 
+    /** @var int Most URLs one inspection request may name (budgets.maxInspectionUrls) */
+    public int $maxInspectionUrls = 0;
+
     /** @var int URLs given more than once and inspected once */
     public int $duplicateUrlsDropped = 0;
 

@@ -17,6 +17,8 @@ export type InsightsSite = {
   /** RE2 patterns of brand queries */
   brandQueryPatterns?: string[];
   pageGroups?: InsightsPageGroups;
+  /** Most URLs one inspection request may name (budgets.maxInspectionUrls) */
+  maxInspectionUrls?: number;
   capabilities?: InsightsProviderCapabilities;
   /** The fully qualified class name of the object */
   objectType?: string | null;

@@ -16,6 +16,16 @@ use DDD\Domain\Base\Entities\ObjectSet;
 class SiteInsightsAccessChecks extends ObjectSet
 {
     /** @return bool whether any capability failed */
+    public function hasWarnings(): bool
+    {
+        foreach ($this->getElements() as $siteInsightsAccessCheck) {
+            if ($siteInsightsAccessCheck->state === SiteInsightsAccessCheck::STATE_WARNING) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function hasFailures(): bool
     {
         foreach ($this->getElements() as $siteInsightsAccessCheck) {

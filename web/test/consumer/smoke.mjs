@@ -10,7 +10,7 @@ const fail = message => {
 const expected = [
   'windowPresets', 'computePresetWindow', 'buildWindowLabel', 'addDays', 'subtractMonthsClamped', 'daysInclusive', 'isValidDay',
   'DEFAULT_WINDOW_PRESET', 'createSiteInsightsApi', 'buildSiteInsightsRequests', 'rebaseSiteInsightsRequest', 'SITE_INSIGHTS_TAG',
-  'formatDelta', 'formatCoverageNotes', 'formatWindowNote', 'DEFAULT_COUNTERPART_STATE_TEXTS',
+  'formatDelta', 'formatCoverageNotes', 'formatWindowNote', 'describeWindow', 'DEFAULT_COUNTERPART_STATE_TEXTS',
 ];
 const missing = expected.filter(name => !(name in main));
 if (missing.length > 0) fail(`missing exports: ${missing.join(', ')}`);
@@ -39,6 +39,7 @@ const inspections = requests.inspectUrls({
 });
 if (inspections.method !== 'POST' || inspections.body?.urls?.[0] !== 'https://example.test/') fail(`the inspection must be a POST with a body: ${JSON.stringify(inspections)}`);
 if (main.formatDelta({ counterpartState: 'notObserved' }, 'clicks').direction !== 'none') fail('a missing counterpart must not be a number');
+if (main.formatDelta({ counterpartState: 'observed', ctrDelta: 0.004 }, 'ctr').unit !== 'percentagePoints') fail('a click rate delta must carry its unit');
 
 // the factory against a real host api (RTK Query of the consumer's installation)
 const { createApi, fetchBaseQuery } = await import('@reduxjs/toolkit/query/react');

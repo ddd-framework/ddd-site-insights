@@ -38,6 +38,9 @@ class InsightsSite extends ValueObject
     /** @var InsightsPageGroups Configured page groups */
     public InsightsPageGroups $pageGroups;
 
+    /** @var int Most URLs one inspection request may name (budgets.maxInspectionUrls) */
+    public int $maxInspectionUrls = 0;
+
     /** @var InsightsProviderCapabilities What the provider can answer */
     public InsightsProviderCapabilities $capabilities;
 

@@ -65,6 +65,8 @@ export const thinKind: SearchOpportunityKindResult = {
 };
 export const notes: CoverageNote[] = formatCoverageNotes(rows);
 export const delta: FormattedDelta = formatDelta(rows.elements?.[0]?.comparison, 'clicks');
+export const deltaUnit: 'perDay' | 'percentagePoints' | null = delta.unit;
+export const noteValues: number | undefined = notes[0]?.values.fetchedRows;
 export const overviewDays: number | undefined = ({} as SearchPerformanceOverview).window?.days;
 
 const baseApi = createApi({ reducerPath: 'api', baseQuery: fetchBaseQuery({ baseUrl: '' }), endpoints: () => ({}) });

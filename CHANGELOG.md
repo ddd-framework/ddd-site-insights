@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.0-rc.7
+
+Coverage flags, translatable view helpers, and what a screen needs without host constants.
+
+### Fixed
+- `limitReached` is false (and `providerRowsExhausted` true) for questions that cannot have more rows: totals (no
+  dimension) and a series asked for every day of its window — in the overview, the page and query details and the
+  page groups. Top lists that hit their limit keep `limitReached` true.
+
+### Changed
+- Access check `budgetCountersShared`: state `warning` for `perPod` and `notCounted` (was `ok`), `ok` for `shared`; new
+  state `warning` (works with a limit, see `detail`) and `SiteInsightsAccessChecks::hasWarnings()`. A warning does not
+  fail `check-access`.
+- `weakClickRateForPosition` note: a hit's baseline leaves the hit out, so it can be usable in a bucket that
+  `positionBuckets` (whole buckets) marks `belowMinBaselineClickRate`.
+
+### Added
+- `maxInspectionUrls` (budgets.maxInspectionUrls) on each site of `insightsSites` and on `urlIndexInspections`.
+- npm (additive): `formatCoverageNotes()` notes carry `values` next to `code` and `text`; `describeWindow()` returns the
+  window as `{code, values, text}`; `formatDelta()` returns `value` and `unit` (`perDay`, `percentagePoints` or null).
+  `text` stays the English default.
+
+### Documentation
+- Skill: a series filtered by one query or page can come with rows Google sent for days without impressions; they
+  are reported as sent (`isFilledDay` false, `hasData` true, 0 impressions). The module fills only days without a row.
+
 ## 0.1.0-rc.6
 
 Rule `weakClickRateForPosition` judges against a usable baseline and ranks by missing clicks.

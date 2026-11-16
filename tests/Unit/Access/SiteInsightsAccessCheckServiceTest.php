@@ -13,6 +13,8 @@ use DDD\Tests\SiteInsights\Support\CapturingNetwork;
 use DDD\Tests\SiteInsights\Support\GoogleFixtures;
 use DDD\Tests\SiteInsights\Support\SiteInsightsTestCase;
 use DDD\Tests\SiteInsights\Support\TestConfig;
+use DDD\Domain\SiteInsights\Services\SiteInsightsProviderBudgetsService;
+use DDD\Tests\SiteInsights\Support\TestBudgetsService;
 use GuzzleHttp\Psr7\Response;
 
 /** Every capability of a site, checked live on synthetic answers */
@@ -32,8 +34,12 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
 
         self::assertSame(SiteInsightsAccessCheck::CAPABILITIES, array_map(static fn ($check) => $check->capability, $siteInsightsAccessChecks->getElements()));
         foreach ($siteInsightsAccessChecks->getElements() as $siteInsightsAccessCheck) {
-            self::assertSame(SiteInsightsAccessCheck::STATE_OK, $siteInsightsAccessCheck->state, $siteInsightsAccessCheck->capability);
+            $expectedState = $siteInsightsAccessCheck->capability === SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED
+                ? SiteInsightsAccessCheck::STATE_WARNING
+                : SiteInsightsAccessCheck::STATE_OK;
+            self::assertSame($expectedState, $siteInsightsAccessCheck->state, $siteInsightsAccessCheck->capability);
         }
+        self::assertTrue($siteInsightsAccessChecks->hasWarnings(), 'counters per pod work, but are no pass');
         self::assertFalse($siteInsightsAccessChecks->hasFailures());
         self::assertSame('siteRestrictedUser', $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_PERMISSION_LEVEL)->detail);
         self::assertSame('verdict PASS', $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->detail);
@@ -53,6 +59,30 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
         self::assertSame(['startDate' => '2026-11-13', 'endDate' => '2026-11-13', 'type' => 'web', 'dataState' => 'final', 'aggregationType' => 'byProperty', 'rowLimit' => 1, 'startRow' => 0], $searchAnalyticsBody);
         $inspectionCounters = array_filter($this->getRedisCache()->countersByKey, static fn (string $counterKey) => str_contains($counterKey, '.inspection.'), ARRAY_FILTER_USE_KEY);
         self::assertSame([1], array_values($inspectionCounters), 'one inspection is counted');
+    }
+
+    public function testSharedCountersAreOk(): void
+    {
+        $this->setService(SiteInsightsProviderBudgetsService::class, new class extends TestBudgetsService {
+            public function getCounterScope(): string
+            {
+                return SiteInsightsProviderBudgetsService::COUNTER_SCOPE_SHARED;
+            }
+        });
+        CapturingNetwork::install(
+            GoogleFixtures::response('sites-list'),
+            GoogleFixtures::response('site-get'),
+            GoogleFixtures::response('searchanalytics-totals'),
+            GoogleFixtures::response('sitemaps-list'),
+            GoogleFixtures::response('inspection-indexed')
+        );
+
+        $siteInsightsAccessChecks = $this->getSiteInsightsAccessCheckService()->checkAccess($this->getSite());
+
+        $countersCheck = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED);
+        self::assertSame(SiteInsightsAccessCheck::STATE_OK, $countersCheck->state);
+        self::assertSame('shared', $countersCheck->detail);
+        self::assertFalse($siteInsightsAccessChecks->hasWarnings());
     }
 
     public function testProviderRefusals(): void
@@ -79,7 +109,7 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
             'searchAnalytics' => SiteInsightsErrorCause::API_NOT_ENABLED->value,
             'sitemaps' => SiteInsightsErrorCause::QUOTA_EXCEEDED->value,
             'urlInspection' => SiteInsightsErrorCause::NOT_USER_OF_PROPERTY->value,
-            'budgetCountersShared' => 'ok',
+            'budgetCountersShared' => 'warning',
         ], $causesByCapability);
         self::assertTrue($siteInsightsAccessChecks->hasFailures());
         $inspectionDetail = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->detail;

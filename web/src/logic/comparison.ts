@@ -7,6 +7,9 @@ import type { SearchMetricsComparison } from '../generated/models/DDD/Domain/Sit
 /** A metric of the API. */
 export type SearchMetricName = 'clicks' | 'impressions' | 'ctr' | 'position';
 
+/** The unit of a delta: per-day averages (partial comparison), percentage points (click rate), or none. */
+export type DeltaUnit = 'perDay' | 'percentagePoints' | null;
+
 /** The counterpart states of the API (`SearchMetricsComparison.counterpartState`). */
 export type CounterpartState = 'observed' | 'notObserved' | 'notRequested' | 'failed';
 
@@ -20,6 +23,13 @@ export interface FormattedDelta {
   /** clicks and impressions of a partial comparison are per-day averages */
   perDay: boolean;
   counterpartState: CounterpartState;
+  /**
+   * The delta as a number in its unit (click rate already in percentage points), null without an observed
+   * counterpart: a translated host formats `value` and `unit` itself instead of using `text`.
+   */
+  value: number | null;
+  /** `perDay` (clicks or impressions of a partial comparison), `percentagePoints` (click rate) or null */
+  unit: DeltaUnit;
 }
 
 export interface FormatDeltaOptions {
@@ -55,10 +65,11 @@ export function formatDelta(
   const perDay = comparison?.perDay === true;
   if (counterpartState !== 'observed') {
     const stateTexts = { ...DEFAULT_COUNTERPART_STATE_TEXTS, ...options.stateTexts };
-    return { text: stateTexts[counterpartState], direction: 'none', improvement: null, perDay, counterpartState };
+    return { text: stateTexts[counterpartState], direction: 'none', improvement: null, perDay, counterpartState, value: null, unit: null };
   }
   const locale = options.locale ?? 'en';
   let value: number | null | undefined;
+  let unit: DeltaUnit = null;
   let text = '';
   const signed = (fractionDigits: number) =>
     new Intl.NumberFormat(locale, { signDisplay: 'exceptZero', maximumFractionDigits: fractionDigits });
@@ -69,11 +80,16 @@ export function formatDelta(
         ? metric === 'clicks' ? comparison?.clicksPerDayDelta : comparison?.impressionsPerDayDelta
         : metric === 'clicks' ? comparison?.clicksDelta : comparison?.impressionsDelta;
       if (value !== null && value !== undefined) text = signed(perDay ? 1 : 0).format(value) + (perDay ? '/day' : '');
+      unit = perDay ? 'perDay' : null;
       break;
     }
     case 'ctr':
       value = comparison?.ctrDelta;
-      if (value !== null && value !== undefined) text = `${signed(1).format(value * 100)} pp`;
+      if (value !== null && value !== undefined) {
+        value = value * 100;
+        text = `${signed(1).format(value)} pp`;
+      }
+      unit = 'percentagePoints';
       break;
     case 'position':
       value = comparison?.positionDelta;
@@ -81,9 +97,9 @@ export function formatDelta(
       break;
   }
   if (value === null || value === undefined) {
-    return { text: '', direction: 'none', improvement: null, perDay, counterpartState };
+    return { text: '', direction: 'none', improvement: null, perDay, counterpartState, value: null, unit };
   }
   const direction = value > 0 ? 'up' : value < 0 ? 'down' : 'flat';
   const improvement = direction === 'flat' ? null : metric === 'position' ? value < 0 : value > 0;
-  return { text, direction, improvement, perDay, counterpartState };
+  return { text, direction, improvement, perDay, counterpartState, value, unit };
 }

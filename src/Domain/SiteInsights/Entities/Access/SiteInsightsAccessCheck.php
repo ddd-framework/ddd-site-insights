@@ -40,6 +40,9 @@ class SiteInsightsAccessCheck extends ValueObject
     public const string STATE_FAILED = 'failed';
     public const string STATE_SKIPPED = 'skipped';
 
+    /** Works, with a limit the operator should know (e.g. call counters per pod instead of shared) */
+    public const string STATE_WARNING = 'warning';
+
     /** @var string Key of the site */
     public string $siteKey;
 
@@ -47,8 +50,8 @@ class SiteInsightsAccessCheck extends ValueObject
     #[Choice(choices: self::CAPABILITIES)]
     public string $capability;
 
-    /** @var string ok, failed, or skipped because a prerequisite failed */
-    #[Choice(choices: [self::STATE_OK, self::STATE_FAILED, self::STATE_SKIPPED])]
+    /** @var string ok, warning (works with a limit, see detail), failed, or skipped because a prerequisite failed */
+    #[Choice(choices: [self::STATE_OK, self::STATE_WARNING, self::STATE_FAILED, self::STATE_SKIPPED])]
     public string $state;
 
     /** @var string|null A SiteInsightsErrorCause value; set when failed */

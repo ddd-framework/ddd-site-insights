@@ -19,6 +19,7 @@ export {
 export {
   type CounterpartState,
   DEFAULT_COUNTERPART_STATE_TEXTS,
+  type DeltaUnit,
   type FormatDeltaOptions,
   type FormattedDelta,
   formatDelta,
@@ -28,8 +29,11 @@ export {
   type CoveredAnswerPart,
   type CoverageNote,
   type CoverageNoteCode,
+  type CoverageNoteValues,
+  describeWindow,
   formatCoverageNotes,
   formatWindowNote,
+  type WindowNote,
 } from './logic/coverageWording';
 export {
   addDays,

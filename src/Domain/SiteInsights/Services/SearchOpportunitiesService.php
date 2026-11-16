@@ -65,7 +65,7 @@ class SearchOpportunitiesService extends SearchPerformanceService
     /** @var string[] What a result of each kind does not prove, by kind */
     public const array NOTES_BY_KIND = [
         SearchOpportunity::KIND_STRIKING_DISTANCE_QUERY => 'An average position over the window; it does not say which page ranks or how hard the queries ahead are.',
-        SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION => 'Ordered by missing clicks (impressions × (baseline − click rate)). An average position does not prove an expected click rate: features on the result page, intent and brand change it.',
+        SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION => 'Ordered by missing clicks (impressions × (baseline − click rate)). A hit is judged against its bucket without itself, so it can carry a usable baseline from a bucket that positionBuckets (whole buckets) marks belowMinBaselineClickRate. An average position does not prove an expected click rate: features on the result page, intent and brand change it.',
         SearchOpportunity::KIND_SEVERAL_PAGES_FOR_QUERY => 'Two pages shown for one query are not proven competition; the provider drops rows in query × page reports.',
         SearchOpportunity::KIND_RISING_QUERY => 'A change between two periods, not its cause; seasonality and anonymised queries are not taken into account.',
         SearchOpportunity::KIND_DECLINING_QUERY => 'A change between two periods, not its cause; seasonality and anonymised queries are not taken into account.',

@@ -10,6 +10,8 @@ export type UrlIndexInspections = {
   property?: string;
   /** Language of the provider's texts, as asked (e.g. en-US) */
   languageCode?: string | null;
+  /** Most URLs one inspection request may name (budgets.maxInspectionUrls) */
+  maxInspectionUrls?: number;
   /** URLs given more than once and inspected once */
   duplicateUrlsDropped?: number;
   /** shared, perPod or notCounted: how the inspection counters are kept (see the module skill) */

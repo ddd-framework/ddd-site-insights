@@ -2080,6 +2080,11 @@
                     "pageGroups": {
                         "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroups"
                     },
+                    "maxInspectionUrls": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Most URLs one inspection request may name (budgets.maxInspectionUrls)"
+                    },
                     "capabilities": {
                         "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsProviderCapabilities"
                     },
@@ -2265,10 +2270,11 @@
                         "type": "string",
                         "enum": [
                             "ok",
+                            "warning",
                             "failed",
                             "skipped"
                         ],
-                        "description": "ok, failed, or skipped because a prerequisite failed  \n Allowed Values:  \n-   `ok`\n-   `failed`\n-   `skipped`\n"
+                        "description": "ok, warning (works with a limit, see detail), failed, or skipped because a prerequisite failed  \n Allowed Values:  \n-   `ok`\n-   `warning`: Works, with a limit the operator should know (e.g. call counters per pod instead of shared)\n-   `failed`\n-   `skipped`\n"
                     },
                     "cause": {
                         "type": "string",
@@ -3775,6 +3781,11 @@
                         "type": "string",
                         "nullable": true,
                         "description": "Language of the provider's texts, as asked (e.g. en-US)"
+                    },
+                    "maxInspectionUrls": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Most URLs one inspection request may name (budgets.maxInspectionUrls)"
                     },
                     "duplicateUrlsDropped": {
                         "type": "integer",

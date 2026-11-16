@@ -334,9 +334,36 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         }
         $rowCount = count($googleSearchAnalyticsReport->rows->getElements());
         $searchRowsCoverage->fetchedRows = $rowCount;
-        $searchRowsCoverage->providerRowsExhausted = $rowCount < $googleSearchAnalyticsReport->rowLimit;
-        $searchRowsCoverage->limitReached = $rowCount >= $googleSearchAnalyticsReport->rowLimit;
+        if ($this->asksForEveryRowThereIs($googleSearchAnalyticsReport)) {
+            // totals, or a series asked for every day of its window: no row can be beyond the answer
+            $searchRowsCoverage->providerRowsExhausted = true;
+            $searchRowsCoverage->limitReached = false;
+        } else {
+            $searchRowsCoverage->providerRowsExhausted = $rowCount < $googleSearchAnalyticsReport->rowLimit;
+            $searchRowsCoverage->limitReached = $rowCount >= $googleSearchAnalyticsReport->rowLimit;
+        }
         return $searchPerformanceRows;
+    }
+
+    /**
+     * @param GoogleSearchAnalyticsReport $googleSearchAnalyticsReport
+     * @return bool whether the question's row limit covers every row that can exist: no dimension (one aggregate), or
+     *         only `date` with a row limit of at least the window's days
+     */
+    protected function asksForEveryRowThereIs(GoogleSearchAnalyticsReport $googleSearchAnalyticsReport): bool
+    {
+        $canonicalDimensions = $googleSearchAnalyticsReport->getCanonicalDimensions();
+        if ($canonicalDimensions === []) {
+            return true;
+        }
+        if ($canonicalDimensions !== ['date']) {
+            return false;
+        }
+        $windowDays = SearchDays::daysInclusive(
+            SearchDays::fromDate($googleSearchAnalyticsReport->startDate),
+            SearchDays::fromDate($googleSearchAnalyticsReport->endDate)
+        );
+        return $googleSearchAnalyticsReport->startRow === 0 && $googleSearchAnalyticsReport->rowLimit >= $windowDays;
     }
 
     /**

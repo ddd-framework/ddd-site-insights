@@ -23,7 +23,14 @@ class InsightsSitesService extends Service
     {
         /** @var SiteInsightsSitesProviderService $siteInsightsSitesProviderService */
         $siteInsightsSitesProviderService = DDDService::instance()->getService(SiteInsightsSitesProviderService::class);
-        return $siteInsightsSitesProviderService->getSites();
+        $insightsSites = $siteInsightsSitesProviderService->getSites();
+        /** @var SiteInsightsConfigService $siteInsightsConfigService */
+        $siteInsightsConfigService = DDDService::instance()->getService(SiteInsightsConfigService::class);
+        $maxInspectionUrls = $siteInsightsConfigService->getBudgetsConfig()->maxInspectionUrls;
+        foreach ($insightsSites->getElements() as $insightsSite) {
+            $insightsSite->maxInspectionUrls = $maxInspectionUrls;
+        }
+        return $insightsSites;
     }
 
     /**

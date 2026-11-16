@@ -56,10 +56,13 @@ import { formatCoverageNotes, formatDelta } from '@mgamadeus/ddd-site-insights';
 
 formatDelta(row.comparison, 'clicks');   // { text: '+12', direction: 'up', improvement: true, … }; notObserved is never 0
 formatDelta(row.comparison, 'position'); // a lower position is an improvement
-formatCoverageNotes(rows);               // [{ code: 'sortedByModule', text: … }, { code: 'anonymizedQueriesOmitted', … }]
+formatCoverageNotes(rows);               // [{ code: 'sortedByModule', values: { fetchedRows: 5000 }, text: … }, …]
+describeWindow(window);                  // { code: 'window', values: { from, to, days, dayTimeZone, dataThroughDate }, text }
 ```
 
-Hosts translate the notes by `code` and the counterpart states through `stateTexts`.
+`text` is the English default. A translated host words a note from its `code` and `values`, a delta from `value` and
+`unit` (`perDay`, `percentagePoints` or null; the click rate already in points), and the counterpart states through
+`stateTexts`.
 
 ## Window logic
 

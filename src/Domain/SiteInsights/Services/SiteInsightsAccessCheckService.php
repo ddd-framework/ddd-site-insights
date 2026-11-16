@@ -138,13 +138,15 @@ class SiteInsightsAccessCheckService extends Service
             }
         }
 
+        // shared: every pod counts against one budget; perPod or notCounted work, but N pods may use N times a quota
+        $counterScope = $siteInsightsProviderBudgetsService->getCounterScope();
         $this->addCheck(
             $siteInsightsAccessChecks,
             $insightsSite,
             SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED,
-            SiteInsightsAccessCheck::STATE_OK,
+            $counterScope === SiteInsightsProviderBudgetsService::COUNTER_SCOPE_SHARED ? SiteInsightsAccessCheck::STATE_OK : SiteInsightsAccessCheck::STATE_WARNING,
             null,
-            $siteInsightsProviderBudgetsService->getCounterScope()
+            $counterScope
         );
         return $siteInsightsAccessChecks;
     }

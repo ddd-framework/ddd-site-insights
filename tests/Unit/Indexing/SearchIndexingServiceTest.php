@@ -112,6 +112,8 @@ class SearchIndexingServiceTest extends SiteInsightsTestCase
             'distinct URLs in the order given'
         );
         self::assertSame(1, $urlIndexInspections->duplicateUrlsDropped);
+        self::assertSame(20, $urlIndexInspections->maxInspectionUrls, 'budgets.maxInspectionUrls, for "n of at most N"');
+        self::assertSame(20, $this->getSite()->maxInspectionUrls, 'also on the site of insightsSites');
         self::assertSame('en-US', $urlIndexInspections->languageCode);
         $indexedInspection = $urlIndexInspections->findInspectionByUrl(self::INDEXED_URL);
         self::assertSame('PASS', $indexedInspection->verdict);
@@ -247,6 +249,7 @@ class SearchIndexingServiceTest extends SiteInsightsTestCase
         TestConfig::apply(['budgets' => ['maxInspectionUrls' => 2]]);
         $answeringNetwork = $this->installInspectionNetwork();
         $searchIndexingService = $this->getSearchIndexingService();
+        self::assertSame(2, $this->getSite()->maxInspectionUrls);
 
         foreach ([
             'too many' => [[self::INDEXED_URL, self::NOT_INDEXED_URL, 'https://example.test/third/'], null],

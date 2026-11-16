@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { formatCoverageNotes, formatWindowNote } from './coverageWording.ts';
+import { describeWindow, formatCoverageNotes, formatWindowNote } from './coverageWording.ts';
 
 const window = {
   from: '2026-10-17', to: '2026-11-13', days: 28, dayTimeZone: 'America/Los_Angeles', dataState: 'final',
@@ -36,4 +36,29 @@ test('errors, fresh data, a refused comparison, page aggregation', () => {
 
 test('nothing to qualify', () => {
   assert.deepEqual(formatCoverageNotes({ coverage: { fetchedRows: 25, limitReached: false, providerRowsExhausted: false, sortScope: 'provider' } }), []);
+});
+
+test('values next to the code, for a translated host', () => {
+  const notes = formatCoverageNotes({
+    comparisonWindow: { kind: 'previousYear', comparisonIsPartial: true, days: 118 },
+    coverage: { fetchedRows: 5000, limitReached: true, sortScope: 'fetchedRows', counterpartsNotRequested: 3, duplicateRowsDropped: 2 },
+  });
+  const valuesByCode = Object.fromEntries(notes.map(note => [note.code, note.values]));
+  assert.deepEqual(valuesByCode.comparisonPartial, { comparisonDays: 118 });
+  assert.deepEqual(valuesByCode.limitReached, { fetchedRows: 5000 });
+  assert.deepEqual(valuesByCode.sortedByModule, { fetchedRows: 5000 });
+  assert.deepEqual(valuesByCode.counterpartsNotRequested, { counterpartsNotRequested: 3 });
+  assert.deepEqual(valuesByCode.duplicateRowsDropped, { duplicateRowsDropped: 2 });
+  assert.ok(notes.every(note => typeof note.text === 'string' && note.text !== ''), 'the English text stays');
+  const errorNote = formatCoverageNotes({ error: { cause: 'quotaExceeded', message: 'Quota exceeded' } })[0];
+  assert.deepEqual(errorNote.values, { cause: 'quotaExceeded', message: 'Quota exceeded' });
+});
+
+test('the window as data', () => {
+  const windowNote = describeWindow(window);
+  assert.equal(windowNote.code, 'window');
+  assert.deepEqual(windowNote.values, {
+    from: '2026-10-17', to: '2026-11-13', days: 28, dayTimeZone: 'America/Los_Angeles', dataThroughDate: '2026-11-13',
+  });
+  assert.equal(windowNote.text, formatWindowNote(window));
 });
