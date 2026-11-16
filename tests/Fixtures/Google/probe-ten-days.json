@@ -1,0 +1,77 @@
+{
+  "rows": [
+    {
+      "keys": [
+        "2026-11-06"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-07"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-08"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-09"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-10"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-11"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-12"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-13"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    }
+  ],
+  "responseAggregationType": "byProperty"
+}

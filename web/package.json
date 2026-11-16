@@ -1,0 +1,69 @@
+{
+  "name": "@mgamadeus/ddd-site-insights",
+  "version": "0.1.0-rc.1",
+  "description": "Frontend of the site insights module for backends built with mgamadeus/ddd (Composer package mgamadeus/ddd-site-insights): types generated from the module's API and pure window logic for Search Console data.",
+  "keywords": [
+    "ddd",
+    "mgamadeus",
+    "search-console",
+    "seo",
+    "site-insights",
+    "rtk-query"
+  ],
+  "homepage": "https://github.com/ddd-framework/ddd-site-insights/tree/main/web#readme",
+  "bugs": {
+    "url": "https://github.com/ddd-framework/ddd-site-insights/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ddd-framework/ddd-site-insights.git",
+    "directory": "web"
+  },
+  "license": "MIT",
+  "author": "Marius-Eugen Gerdan <marius@gerdan.net>",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/clean.mjs && tsup && node scripts/check-package.mjs .",
+    "typecheck": "tsc -p .",
+    "test": "node --experimental-strip-types --no-warnings --test \"src/**/*.test.ts\"",
+    "generate": "ddd-web-sdk --config openapi-config.ts",
+    "check:generated": "pnpm generate && git diff --exit-code -- src/generated && test -z \"$(git status --porcelain -- src/generated)\"",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@12.16.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@mgamadeus/ddd-web": ">=0.13.0 <1.0.0",
+    "@reduxjs/toolkit": "^2.6.0",
+    "react": "^19.0.0",
+    "react-redux": "^9.0.0"
+  },
+  "devDependencies": {
+    "@mgamadeus/ddd-web": "^0.14.0",
+    "@reduxjs/toolkit": "^2.13.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1",
+    "react-redux": "^9.3.1",
+    "tsup": "^9.0.0",
+    "typescript": "^6.0.3"
+  }
+}

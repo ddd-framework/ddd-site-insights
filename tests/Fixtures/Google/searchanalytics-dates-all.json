@@ -1,0 +1,26 @@
+{
+  "rows": [
+    {
+      "keys": [
+        "2026-11-12"
+      ],
+      "clicks": 10,
+      "impressions": 100,
+      "ctr": 0.1,
+      "position": 8.0
+    },
+    {
+      "keys": [
+        "2026-11-14"
+      ],
+      "clicks": 5,
+      "impressions": 80,
+      "ctr": 0.0625,
+      "position": 8.5
+    }
+  ],
+  "responseAggregationType": "byProperty",
+  "metadata": {
+    "first_incomplete_date": "2026-11-15"
+  }
+}

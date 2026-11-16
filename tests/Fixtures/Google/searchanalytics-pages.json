@@ -1,0 +1,14 @@
+{
+  "rows": [
+    {
+      "keys": [
+        "https://example.test/guides/alpha/"
+      ],
+      "clicks": 30,
+      "impressions": 700,
+      "ctr": 0.0428,
+      "position": 5.1
+    }
+  ],
+  "responseAggregationType": "byPage"
+}

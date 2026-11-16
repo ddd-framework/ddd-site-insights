@@ -1,0 +1,12 @@
+{
+  "siteEntry": [
+    {
+      "siteUrl": "https://example.test/",
+      "permissionLevel": "siteRestrictedUser"
+    },
+    {
+      "siteUrl": "sc-domain:other.example.test",
+      "permissionLevel": "siteOwner"
+    }
+  ]
+}

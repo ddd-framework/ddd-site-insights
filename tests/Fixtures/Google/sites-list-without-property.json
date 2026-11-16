@@ -1,0 +1,8 @@
+{
+  "siteEntry": [
+    {
+      "siteUrl": "sc-domain:other.example.test",
+      "permissionLevel": "siteOwner"
+    }
+  ]
+}

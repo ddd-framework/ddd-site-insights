@@ -1,0 +1,584 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Site insights admin API (fixture application)",
+        "version": "1.0",
+        "description": "## QueryOptions syntax\n\nThese OData-inspired query parameters (`filters`, `orderBy`, `expand`, `select`) share the grammar below on every endpoint/tool. Each parameter's description lists only its endpoint-specific allowed properties; the syntax for all of them is documented here once.\n\n### filters\n\nFilter Options (OData-inspired)\nBasics:\n- Combine comparisons with `and` / `or` (case-insensitive).\n- Use parentheses `(...)` for grouping / precedence (nesting allowed).\n\nComparison:\n- `<property> <operator> <value>`\n- `<property>` may use dot-notation: `foo`, `fooBar`, `foo.bar_baz`\n\nOperators:\n- `eq`, `ne`, `gt`, `ge`, `lt`, `le`  -> single scalar value\n- `in`                                -> list of scalars: `['A','B']`\n- `ni`                                -> not in list of scalars: `['A','B']`\n- `bw`                                -> list of exactly 2 scalars: `['from','to']`\n- `ft`                                -> fulltext search (MATCH AGAINST) in natural language mode\n- `fb`                                -> fulltext search (MATCH AGAINST) in boolean mode\n\nFulltext notes:\n- `ft` / `fb` require that the target column is FULLTEXT-indexed in the database.\n- For `#[Translatable(fullTextIndex: true)]` properties, the system uses a generated stored virtual\n  search column (e.g. `virtualNameSearch`) behind the scenes, so filtering still targets `name` in\n  the API while the database query targets the virtual FULLTEXT column.\n\nValue rules (strict):\n- Every scalar MUST be wrapped in single quotes: `'...'` (numbers and dates included).\n- NULL MUST be written as the scalar `'NULL'`.\n- Lists MUST use brackets and comma separation, with every item quoted: `['A','B']`.\n\nExamples:\n- `someInt lt '10'`\n- `someDate ge '2025-01-01'`\n- `someEntity.subEntity.someProperty eq 'mydomain.com'`\n- `someStatus in ['UPCOMING','RUNNING']`\n- `someStatus ni ['CANCELLED','DELETED']`\n- `someDate bw ['2026-01-01','2026-01-22']`\n- `name ft 'berlin brandenburg'`\n- `name fb '+berlin +brandenburg -potsdam'`\n- `business.name ft 'kfc arad'`\n- `someDate eq 'NULL' or someDate gt '2025-01-01'`\n- `(someStatus in ['UPCOMING','RUNNING'] and someInt ge '2') or otherInt eq '42'`\n\n### orderBy\n\nOrderBy Options (OData-inspired)\n\nComma-separated list of sort keys:\n`<propertyPath> <direction>?, <propertyPath> <direction>? ...`\n\nRules / restrictions:\n- `<propertyPath>` is **not quoted** and supports dot-notation.\n- Sortable fields are **endpoint-specific** and validated against the endpoint QueryOptions definitions.\n- Sorting by expanded relations is supported via `<relation>.<field>` if that relation is included via `expand`.\n- `<direction>` is optional (defaults to `asc`), allowed: `asc`, `desc` (case-insensitive).\n- Fulltext relevance score ordering is supported via the `{propertyName}Score` suffix (e.g. `nameScore desc`).\n  This requires a corresponding fulltext filter on the base property using `ft` or `fb`.\n- Score ordering also works on expanded relations using dot-notation (e.g. `business.nameScore desc`),\n  but requires:\n  - the relation to be included via `expand=business`\n  - a fulltext filter on the matching base property (e.g. `filters=business.name ft 'kfc arad'`)\n\nExamples:\n- `someField asc, otherField desc`\n- `someRelation.someField desc`\n- `nameScore desc`\n- `business.nameScore desc`\n\n### expand\n\nExpand Options (OData-inspired)\n\nComma-separated list of relations to include:\n`someRelation,otherRelation`\n\nA relation may define clauses in parentheses. **Clauses are separated by semicolons (`;`)**:\n`someRelation(select=someField,otherField;filters=...;orderBy=someField desc;top=50;skip=0;expand=otherRelation(select=someField))`\n\nSupported clauses (inside `(...)`):\n- `select=<prop>,<prop>,...` (comma-separated list, no quotes)\n- `filters=<filterExpr>` (same language as `filters`)\n- `orderBy=<propertyPath> <direction>?` (same language as `orderBy`)\n- `top=<int>`\n- `skip=<int>`\n- `expand=<relation>[...],...` (comma-separated, recursive)\n\nRules / restrictions:\n- Expandable relations and selectable/orderable fields are **endpoint-specific** and validated against the endpoint QueryOptions definitions.\n- `and` / `or` inside `filters` are case-insensitive.\n\nExamples:\n- `someRelation,otherRelation`\n- `someRelation(select=someField,otherField)`\n- `someRelation(expand=otherRelation(select=someField))`\n- `someRelation(orderBy=someField desc;top=50;skip=0;select=someField,otherField;expand=otherRelation(select=someField))`\n\n### select\n\nSelect Options (OData-inspired)\n\nComma-separated list of properties to include in the response.\n\nRules / restrictions:\n- Properties are **not quoted**.\n- Whitespace around commas is ignored.\n- Dot-notation is allowed (e.g. `nested.fieldName`).\n- Selectable fields are **endpoint-specific** and validated against the endpoint QueryOptions definitions.\n- Not allowed: operators (`eq`, `gt`, ...), lists (`[...]`), parentheses, or any functions.\n\nExamples:\n- `id,name`\n- `scope,identifier,type,publicUrl`\n- `nested.fieldName,nested.otherField`\n\n## Shared request parameters\n\nThese common parameters behave identically wherever they appear:\n\n- `noCache`: If set to true, no EntityRegistry Argus Caching will be used\n- `outputFormat`: Preferred response shape. `null`/`structured` = the full structured payload (default). `llm` asks an endpoint THAT SUPPORTS IT (opt-in per endpoint) to return a compact Markdown rendering optimized for an LLM/human reader instead — endpoints whose payload object implements `LlmMarkdownRenderable`. Endpoints that don't support it ignore this.\n- `skip`: Number of results to be skipped / offsetted\n- `top`: The number of results to be returned\n- `skiptoken`: Cursor for point to a resultset that was previously provided"
+    },
+    "servers": [],
+    "paths": {
+        "/api/admin/siteInsights/sites": {
+            "get": {
+                "summary": "SiteInsights Sites",
+                "description": "The configured sites with their page groups and what their provider can answer.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSitesGetResponseDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/accessChecks": {
+            "get": {
+                "summary": "SiteInsights Site Access Checks",
+                "description": "Checks every capability of the site against the provider, live: key, token, property, permission level,\nSearch Analytics, sitemaps, URL inspection (one inspection is counted) and whether the call counters are shared.\nStates only, never a secret.",
+                "parameters": [
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsAccessChecksGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSitesGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "insightsSites": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsSites"
+                    }
+                },
+                "required": [
+                    "insightsSites"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Sites.InsightsSites": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsSite"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Sites.InsightsSite": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Key of the site (`^[a-z0-9][a-z0-9-]{0,62}$`), used in URLs and commands"
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": "Label shown in the admin"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Provider key, e.g. google-search-console"
+                    },
+                    "property": {
+                        "type": "string",
+                        "description": "Search Console property: `https://example.test/` (URL prefix) or `sc-domain:example.test`"
+                    },
+                    "credentialsEntryName": {
+                        "type": "string",
+                        "description": "Name of the credentials entry that reads the property; a name, never a secret"
+                    },
+                    "credentialsRevision": {
+                        "type": "integer",
+                        "description": "Revision of the credentials entry (part of every cache identity)"
+                    },
+                    "brandQueryPatterns": {
+                        "type": "array",
+                        "default": [],
+                        "description": "RE2 patterns of brand queries",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pageGroups": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroups"
+                    },
+                    "capabilities": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsProviderCapabilities"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroups": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroup"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroup": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Key of the group within its site"
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": "Label shown in the admin"
+                    },
+                    "pathPatterns": {
+                        "type": "array",
+                        "default": [],
+                        "description": "RE2 patterns on the URL path (no lookarounds, no backreferences)",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Sites.InsightsProviderCapabilities": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "description": "Provider key, e.g. google-search-console"
+                    },
+                    "dimensions": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Dimensions rows can be grouped by",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "filterOperators": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Filter operators",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "metrics": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Metrics of every row",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "searchTypes": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Search types",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "dataStates": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Data states (final: settled days only; all: fresh days that may still change)",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "aggregations": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Aggregations",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "dayTimeZone": {
+                        "type": "string",
+                        "description": "Time zone the provider counts its days in"
+                    },
+                    "retentionMonths": {
+                        "type": "integer",
+                        "description": "Months of data the provider keeps"
+                    },
+                    "maxRowsPerCall": {
+                        "type": "integer",
+                        "description": "Most rows one call may ask for"
+                    },
+                    "hasHourlyData": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether hourly data is available (not used in version 1)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsAccessChecksGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "siteInsightsAccessChecks": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessChecks"
+                    }
+                },
+                "required": [
+                    "siteInsightsAccessChecks"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessChecks": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheck"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheck": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "capability": {
+                        "type": "string",
+                        "enum": [
+                            "keyReadable",
+                            "tokenObtained",
+                            "propertyListed",
+                            "permissionLevel",
+                            "searchAnalytics",
+                            "sitemaps",
+                            "urlInspection",
+                            "budgetCountersShared"
+                        ],
+                        "description": "The capability checked  \n Allowed Values:  \n-   `keyReadable`\n-   `tokenObtained`\n-   `propertyListed`\n-   `permissionLevel`\n-   `searchAnalytics`\n-   `sitemaps`\n-   `urlInspection`\n-   `budgetCountersShared`\n"
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "ok",
+                            "failed",
+                            "skipped"
+                        ],
+                        "description": "ok, failed, or skipped because a prerequisite failed  \n Allowed Values:  \n-   `ok`\n-   `failed`\n-   `skipped`\n"
+                    },
+                    "cause": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "A SiteInsightsErrorCause value; set when failed"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "What failed or what was found (e.g. the permission level), without secrets"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Infrastructure.Exceptions.BadRequestException": {
+                "type": "object",
+                "properties": {
+                    "validationErrors": {
+                        "$ref": "#/components/schemas/DDD.Infrastructure.Validation.ValidationErrors"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Error message"
+                    },
+                    "exceptionDetails": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.ExceptionDetails"
+                    }
+                }
+            },
+            "DDD.Infrastructure.Validation.ValidationErrors": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Infrastructure.Validation.ValidationError"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Infrastructure.Validation.ValidationError": {
+                "type": "object",
+                "properties": {
+                    "jsonPath": {
+                        "type": "string",
+                        "description": "Complete object path to the property where validation failed"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Infrastructure.Validation.ValidationResult"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Infrastructure.Validation.ValidationResult": {
+                "type": "object",
+                "properties": {
+                    "propertyName": {
+                        "type": "string",
+                        "description": "The name of the property where the validation failed"
+                    },
+                    "errorMessage": {
+                        "type": "string",
+                        "description": "The error message for the validation"
+                    },
+                    "receivedValue": {
+                        "type": "string",
+                        "description": "The value that was given and which failed the validation"
+                    },
+                    "className": {
+                        "type": "string",
+                        "description": "Complete path to the type of the property for which the validation failed"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Infrastructure.Exceptions.ExceptionDetails": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.ExceptionDetail"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Infrastructure.Exceptions.ExceptionDetail": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Exception message"
+                    },
+                    "details": {
+                        "type": "array",
+                        "nullable": true,
+                        "description": "Exception detail, can be a payload of different types",
+                        "items": []
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "BadRequestException",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException\" />"
+        },
+        {
+            "name": "ExceptionDetail",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Exceptions.ExceptionDetail\" />"
+        },
+        {
+            "name": "ExceptionDetails",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Exceptions.ExceptionDetails\" />"
+        },
+        {
+            "name": "InsightsPageGroup",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroup\" />"
+        },
+        {
+            "name": "InsightsPageGroups",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroups\" />"
+        },
+        {
+            "name": "InsightsProviderCapabilities",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsProviderCapabilities\" />"
+        },
+        {
+            "name": "InsightsSite",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsSite\" />"
+        },
+        {
+            "name": "InsightsSites",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsSites\" />"
+        },
+        {
+            "name": "SiteInsights",
+            "description": "Search Console insights: sites, search performance and indexing"
+        },
+        {
+            "name": "SiteInsightsAccessCheck",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheck\" />"
+        },
+        {
+            "name": "SiteInsightsAccessChecks",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessChecks\" />"
+        },
+        {
+            "name": "SiteInsightsAccessChecksGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsAccessChecksGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSitesGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSitesGetResponseDto\" />"
+        },
+        {
+            "name": "ValidationError",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Validation.ValidationError\" />"
+        },
+        {
+            "name": "ValidationErrors",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Validation.ValidationErrors\" />"
+        },
+        {
+            "name": "ValidationResult",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Validation.ValidationResult\" />"
+        }
+    ],
+    "x-tagGroups": [
+        {
+            "name": "SiteInsights",
+            "tags": [
+                "SiteInsights"
+            ]
+        },
+        {
+            "name": "Models",
+            "tags": [
+                "SiteInsightsSitesGetResponseDto",
+                "InsightsSites",
+                "InsightsSite",
+                "InsightsPageGroups",
+                "InsightsPageGroup",
+                "InsightsProviderCapabilities",
+                "SiteInsightsAccessChecksGetResponseDto",
+                "SiteInsightsAccessChecks",
+                "SiteInsightsAccessCheck",
+                "BadRequestException",
+                "ValidationErrors",
+                "ValidationError",
+                "ValidationResult",
+                "ExceptionDetails",
+                "ExceptionDetail"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": 403,
+    "message": "User does not have sufficient permission for site 'https://example.test/'. See also: https://support.google.com/webmasters/answer/2451999.",
+    "errors": [
+      {
+        "message": "User does not have sufficient permission for site 'https://example.test/'.",
+        "domain": "global",
+        "reason": "forbidden"
+      }
+    ],
+    "status": "PERMISSION_DENIED"
+  }
+}

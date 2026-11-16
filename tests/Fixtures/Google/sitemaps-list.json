@@ -1,0 +1,30 @@
+{
+  "sitemap": [
+    {
+      "path": "https://example.test/sitemap.xml",
+      "lastSubmitted": "2026-11-01T10:00:00.000Z",
+      "isPending": false,
+      "isSitemapsIndex": true,
+      "type": "sitemap",
+      "lastDownloaded": "2026-11-15T04:00:00.000Z",
+      "warnings": "0",
+      "errors": "0"
+    },
+    {
+      "path": "https://example.test/sitemap-guides.xml",
+      "isPending": false,
+      "isSitemapsIndex": false,
+      "type": "sitemap",
+      "lastDownloaded": "2026-11-15T04:01:00.000Z",
+      "warnings": "2",
+      "errors": "1",
+      "contents": [
+        {
+          "type": "web",
+          "submitted": "120",
+          "indexed": "0"
+        }
+      ]
+    }
+  ]
+}

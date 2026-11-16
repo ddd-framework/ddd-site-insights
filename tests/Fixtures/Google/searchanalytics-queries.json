@@ -1,0 +1,34 @@
+{
+  "rows": [
+    {
+      "keys": [
+        "alpha widget",
+        "DESKTOP"
+      ],
+      "clicks": 40,
+      "impressions": 900,
+      "ctr": 0.0444,
+      "position": 4.2
+    },
+    {
+      "keys": [
+        "beta gadget",
+        "MOBILE"
+      ],
+      "clicks": 12.0,
+      "impressions": 300.0,
+      "ctr": 0.04,
+      "position": 9.75
+    },
+    {
+      "keys": [
+        "gamma gizmo",
+        "TABLET"
+      ],
+      "clicks": 0,
+      "impressions": 20,
+      "ctr": 0
+    }
+  ],
+  "responseAggregationType": "auto"
+}

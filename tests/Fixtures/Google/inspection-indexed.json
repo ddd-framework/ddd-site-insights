@@ -1,0 +1,20 @@
+{
+  "inspectionResult": {
+    "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=https://example.test/&id=synthetic",
+    "indexStatusResult": {
+      "verdict": "PASS",
+      "coverageState": "Submitted and indexed",
+      "robotsTxtState": "ALLOWED",
+      "indexingState": "INDEXING_ALLOWED",
+      "lastCrawlTime": "2026-11-14T08:30:00Z",
+      "pageFetchState": "SUCCESSFUL",
+      "googleCanonical": "https://example.test/",
+      "userCanonical": "https://example.test/",
+      "sitemap": [
+        "https://example.test/sitemap.xml"
+      ],
+      "referringUrls": [],
+      "crawledAs": "MOBILE"
+    }
+  }
+}
