@@ -19,11 +19,13 @@ src/
 |   +-- Credentials/          [GoogleServiceAccountKey, GoogleAccessTokenGrant: never serialised, never services]
 |   +-- Entities/
 |   |   +-- Access/           [SiteInsightsAccessCheck(s)]
-|   |   +-- Config/           [typed configuration: SiteInsightsBudgetsConfig, …CacheConfig, …CredentialsConfig, site entries]
+|   |   +-- Config/           [typed configuration: SiteInsightsBudgetsConfig, …CacheConfig, …CredentialsConfig, …OpportunitiesConfig, site entries]
 |   |   +-- Budgets/          [SiteInsightsBudgetCounter(s)]
 |   |   +-- Errors/           [SiteInsightsErrorCause]
 |   |   +-- Google/           [raw answers in Google's shape: GoogleSearchAnalyticsReport, GoogleSites, GoogleSite, GoogleSitemaps, GoogleUrlInspection(s), GoogleApiFailure]
 |   |   +-- Indexing/         [neutral indexing answers: SitemapStatus(es), SitemapContentCount(s), UrlIndexInspection(s), IndexingCoverage]
+|   |   +-- Opportunities/    [SearchOpportunity(ies), SearchOpportunityKindResult(s), SearchOpportunityThresholds, SearchClickRateBaseline,
+|   |                          SearchPositionBucket(s), SearchOpportunitiesRequest]
 |   |   +-- Search/           [neutral reports and coverage: SearchPerformanceRows, SearchWindow, SearchRowsCoverage, SearchQuestion,
 |   |                          SearchPerformanceOverview, SearchTotals, SearchPageDetail, SearchQueryDetail, SearchPageGroupPerformance(s),
 |   |                          SearchListRequest, SearchExportRequest, SearchExportSummary, …]
@@ -31,7 +33,7 @@ src/
 |   +-- Exceptions/           [SiteInsightsProviderUnavailableException (503), SiteInsightsBudgetExceededException (429)]
 |   +-- Repo/Argus/Google/    [Argus repositories of the raw answers]
 |   +-- Services/             [public: config, sites, access policy, credentials, tokens, request builder, source, windows, budgets,
-|   |                          access checks, search performance, search indexing]
+|   |                          access checks, search performance, search indexing, opportunities]
 |   +-- Utils/                [SearchDays: day arithmetic on UTC days; SearchRegex: RE2 expressions of counterparts and page groups]
 +-- Presentation/Api/Admin/SiteInsights/ [controller traits and DTOs]
 +-- Symfony/Commands/SiteInsights/       [SiteInsightsCommand and the commands]

@@ -11,10 +11,12 @@ import {
   formatDelta,
   type GetAdminSiteInsightsSitesApiResponse,
   type GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
+  type GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg,
   type GetAdminSiteInsightsSitesSearchQueriesBySiteKeyApiArg,
   type InsightsSite,
   type PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg,
   type PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg,
+  type SearchOpportunityKindResult,
   type SearchPerformanceOverview,
   type SearchPerformanceRows,
   type SiteInsightsAccessCheck,
@@ -54,6 +56,13 @@ export const inspectionsArg: PostAdminSiteInsightsSitesIndexingInspectionsBySite
   dddPresentationApiAdminSiteInsightsDtosSiteInsightsInspectionsPostRequestDto: { urls: ['https://example.test/'], languageCode: 'en-US' },
 };
 export const inspection: UrlIndexInspection = { url: 'https://example.test/', verdict: 'PASS' };
+export const opportunitiesArg: GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg = { siteKey: 'example-site', kind: 'weakClickRateForPosition', preset: '90d' };
+export const thinKind: SearchOpportunityKindResult = {
+  kind: 'weakClickRateForPosition',
+  resultCount: 0,
+  emptyReason: 'thinBaseline',
+  positionBuckets: { elements: [{ positionFrom: 1, positionTo: 2, device: 'mobile', rowCount: 2, hasBaseline: false }] },
+};
 export const notes: CoverageNote[] = formatCoverageNotes(rows);
 export const delta: FormattedDelta = formatDelta(rows.elements?.[0]?.comparison, 'clicks');
 export const overviewDays: number | undefined = ({} as SearchPerformanceOverview).window?.days;

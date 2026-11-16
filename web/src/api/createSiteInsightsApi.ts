@@ -16,6 +16,8 @@ import type { GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiArg } from '..
 import type { GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiResponse';
 import type { GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg';
 import type { GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiResponse';
+import type { GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg';
+import type { GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse';
 import type { GetAdminSiteInsightsSitesSearchOverviewBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchOverviewBySiteKeyApiArg';
 import type { GetAdminSiteInsightsSitesSearchOverviewBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchOverviewBySiteKeyApiResponse';
 import type { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg';
@@ -116,6 +118,11 @@ export interface SiteInsightsApi {
     GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse,
     GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg
   >;
+  /** `GET /sites/{siteKey}/search/opportunities?kind=`: candidates of the opportunity rules with one result per kind. */
+  useSearchOpportunitiesQuery: SiteInsightsQueryHook<
+    GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse,
+    GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg
+  >;
   /** `GET /sites/{siteKey}/indexing/sitemaps`: the sitemap files of the site (a cached read, no daily quota). */
   useIndexingSitemapsQuery: SiteInsightsQueryHook<
     GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
@@ -161,6 +168,7 @@ export function buildSiteInsightsRequests(apiPrefix: string) {
     searchPageGroups: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchPageGroupsBySiteKey),
     searchPageDetail: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchPageDetailBySiteKey),
     searchQueryDetail: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchQueryDetailBySiteKey),
+    searchOpportunities: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchOpportunitiesBySiteKey),
     indexingSitemaps: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesIndexingSitemapsBySiteKey),
     inspectUrls: rebase(siteInsightsApiRequests.postAdminSiteInsightsSitesIndexingInspectionsBySiteKey),
   };
@@ -204,6 +212,8 @@ export const createSiteInsightsApi = <ReducerPath extends string, TagTypes exten
         PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg
       >({
         query: requests.checkAccess,
+        // a read that counts a URL inspection: it changes nothing a query shows
+        invalidatesTags: [],
       }),
       siteInsightsSearchOverview: build.query<
         GetAdminSiteInsightsSitesSearchOverviewBySiteKeyApiResponse,
@@ -237,6 +247,10 @@ export const createSiteInsightsApi = <ReducerPath extends string, TagTypes exten
         GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse,
         GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg
       >({ query: requests.searchQueryDetail, providesTags: PROVIDED }),
+      siteInsightsSearchOpportunities: build.query<
+        GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse,
+        GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg
+      >({ query: requests.searchOpportunities, providesTags: PROVIDED }),
       siteInsightsIndexingSitemaps: build.query<
         GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
         GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg
@@ -244,7 +258,7 @@ export const createSiteInsightsApi = <ReducerPath extends string, TagTypes exten
       siteInsightsInspectUrls: build.mutation<
         PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse,
         PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg
-      >({ query: requests.inspectUrls }),
+      >({ query: requests.inspectUrls, invalidatesTags: [] }),
     }),
     overrideExisting: false,
   });
@@ -260,6 +274,7 @@ export const createSiteInsightsApi = <ReducerPath extends string, TagTypes exten
     useSearchPageGroupsQuery: api.useSiteInsightsSearchPageGroupsQuery,
     useSearchPageDetailQuery: api.useSiteInsightsSearchPageDetailQuery,
     useSearchQueryDetailQuery: api.useSiteInsightsSearchQueryDetailQuery,
+    useSearchOpportunitiesQuery: api.useSiteInsightsSearchOpportunitiesQuery,
     useIndexingSitemapsQuery: api.useSiteInsightsIndexingSitemapsQuery,
     useInspectUrlsMutation: api.useSiteInsightsInspectUrlsMutation,
   };

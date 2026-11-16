@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Thresholds of the opportunity rules (evaluated from version 0.4 on). Thresholds in impressions or clicks are per 28
- * days and scaled to the window. An application replaces this file as a whole.
+ * Thresholds of the opportunity rules. Thresholds in impressions or clicks are per 28 days and scaled to the window
+ * (ceil(value × days / 28)). An application replaces this file as a whole; a site overrides single settings with its
+ * own `opportunities` entry in sites.php (same shape). A setting left out keeps the module's default.
  */
 return [
     'minWindowDays' => 7,
@@ -16,9 +17,12 @@ return [
         'maxResults' => 50,
     ],
     'weakClickRateForPosition' => [
-        'minImpressions' => 200,
-        'minRowsPerBucket' => 8,
+        'minImpressions' => 50,
+        'minRowsPerBucket' => 5,
         'ratio' => 0.5,
+        'excludeBrand' => true,
+        // a device bucket below minRowsPerBucket takes the baseline of all devices (the result says so: baselineScope)
+        'fallbackToAllDevices' => true,
         'maxResults' => 50,
     ],
     'severalPagesForQuery' => [

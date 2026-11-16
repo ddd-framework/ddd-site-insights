@@ -8,6 +8,7 @@ import { GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg } from "./models/
 import { GetAdminSiteInsightsSitesSearchPageGroupsBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchPageGroupsBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg";
+import { GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg";
 import { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg } from "./models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg";
 
@@ -181,6 +182,22 @@ export const siteInsightsApiRequests = {
     url: `/api/admin/siteInsights/sites/${encodeURIComponent(String(queryArg.siteKey))}/search/queryDetail`,
     params: {
       query: queryArg.query,
+      preset: queryArg.preset,
+      from: queryArg["from"],
+      to: queryArg.to,
+      compare: queryArg.compare,
+      searchType: queryArg.searchType,
+      dataState: queryArg.dataState,
+      noCache: queryArg.noCache,
+      outputFormat: queryArg.outputFormat,
+    },
+  }),
+  getAdminSiteInsightsSitesSearchOpportunitiesBySiteKey: (
+    queryArg: GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg,
+  ): string | FetchArgs => ({
+    url: `/api/admin/siteInsights/sites/${encodeURIComponent(String(queryArg.siteKey))}/search/opportunities`,
+    params: {
+      kind: queryArg.kind,
       preset: queryArg.preset,
       from: queryArg["from"],
       to: queryArg.to,

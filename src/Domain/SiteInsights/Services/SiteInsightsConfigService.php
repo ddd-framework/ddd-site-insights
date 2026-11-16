@@ -7,6 +7,7 @@ namespace DDD\Domain\SiteInsights\Services;
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsBudgetsConfig;
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsCacheConfig;
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsCredentialsConfig;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsOpportunitiesConfig;
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsPageGroupEntries;
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsPageGroupEntry;
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsSiteEntries;
@@ -54,6 +55,33 @@ class SiteInsightsConfigService extends Service
     public function getBudgetsConfig(): SiteInsightsBudgetsConfig
     {
         return SiteInsightsBudgetsConfig::fromConfigSettings((array)(Config::get('SiteInsights.budgets') ?? []));
+    }
+
+    /**
+     * @param string|null $siteKey the site whose own `opportunities` settings (in `sites.php`) apply over the file's
+     * @return SiteInsightsOpportunitiesConfig the defaults, then `SiteInsights.opportunities`, then the site's settings
+     * @throws InternalErrorException for an unknown rule or setting, or a value of the wrong type (named)
+     */
+    public function getOpportunitiesConfig(?string $siteKey = null): SiteInsightsOpportunitiesConfig
+    {
+        $opportunitiesConfig = new SiteInsightsOpportunitiesConfig();
+        $opportunitiesConfig->applyConfigSettings((array)(Config::get('SiteInsights.opportunities') ?? []), 'SiteInsights.opportunities');
+        if ($siteKey === null) {
+            return $opportunitiesConfig;
+        }
+        $sitesConfig = Config::get('SiteInsights.sites');
+        $configuredSites = is_array($sitesConfig) ? ($sitesConfig['sites'] ?? []) : [];
+        foreach (is_array($configuredSites) ? $configuredSites : [] as $sitePosition => $siteSettings) {
+            if (!is_array($siteSettings) || ($siteSettings['key'] ?? null) !== $siteKey || !isset($siteSettings['opportunities'])) {
+                continue;
+            }
+            $siteSettingPath = 'SiteInsights.sites[' . $sitePosition . '].opportunities';
+            if (!is_array($siteSettings['opportunities'])) {
+                throw new InternalErrorException($siteSettingPath . ' must be a list of settings');
+            }
+            $opportunitiesConfig->applyConfigSettings($siteSettings['opportunities'], $siteSettingPath);
+        }
+        return $opportunitiesConfig;
     }
 
     /**

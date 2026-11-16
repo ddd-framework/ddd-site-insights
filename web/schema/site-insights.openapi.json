@@ -1718,6 +1718,166 @@
                 ]
             }
         },
+        "/api/admin/siteInsights/sites/{siteKey}/search/opportunities": {
+            "get": {
+                "summary": "SiteInsights Search Opportunities",
+                "description": "The candidates of the opportunity rules for one window, with one result per kind (thresholds, coverage of the\nsource, why a kind is empty, or its error). All kinds together plan at most budgets.callsPerOperation.opportunities\nprovider calls; a kind beyond it carries `error` budgetRefused. A GET: it counts no daily quota.",
+                "parameters": [
+                    {
+                        "name": "kind",
+                        "description": "One kind; left out: every kind  \nAllowed Values:  \n-   `strikingDistanceQuery`\n-   `weakClickRateForPosition`\n-   `severalPagesForQuery`\n-   `risingQuery`\n-   `decliningQuery`\n-   `risingPage`\n-   `decliningPage`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "strikingDistanceQuery",
+                                "weakClickRateForPosition",
+                                "severalPagesForQuery",
+                                "risingQuery",
+                                "decliningQuery",
+                                "risingPage",
+                                "decliningPage"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchOpportunitiesGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
         "/api/admin/siteInsights/sites/{siteKey}/indexing/sitemaps": {
             "get": {
                 "summary": "SiteInsights Indexing Sitemaps",
@@ -3001,6 +3161,361 @@
                     }
                 }
             },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchOpportunitiesGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "searchOpportunities": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunities"
+                    }
+                },
+                "required": [
+                    "searchOpportunities"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunities": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "window": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow"
+                    },
+                    "comparisonWindow": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow"
+                    },
+                    "kinds": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityKindResults"
+                    },
+                    "providerCalls": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Provider calls of all kinds together (cache hits not counted)"
+                    },
+                    "callsAllowed": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "The calls the operation may plan (budgets.callsPerOperation.opportunities)"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunity"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityKindResults": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityKindResult"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityKindResult": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "description": "The kind"
+                    },
+                    "resultCount": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Results of the kind in `elements` of the set"
+                    },
+                    "emptyReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, sourceFailed"
+                    },
+                    "error": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError"
+                    },
+                    "isPartial": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Results come from part of the source only (some calls failed, see `error`)"
+                    },
+                    "thresholds": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityThresholds"
+                    },
+                    "sourceCoverage": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchRowsCoverage"
+                    },
+                    "providerCalls": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Provider calls this kind added (sources shared with an earlier kind are counted there)"
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "What a result of this kind does not prove"
+                    },
+                    "positionBuckets": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchPositionBuckets"
+                    },
+                    "observedInOnePeriodOnly": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityThresholds": {
+                "type": "object",
+                "properties": {
+                    "windowDays": {
+                        "type": "integer",
+                        "description": "Days of the window the thresholds are scaled to"
+                    },
+                    "positionFrom": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Lowest position (strikingDistanceQuery)"
+                    },
+                    "positionTo": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Highest position (strikingDistanceQuery)"
+                    },
+                    "minImpressions": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Fewest impressions of a row, scaled"
+                    },
+                    "excludeBrand": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "description": "Whether brand queries are left out"
+                    },
+                    "minRowsPerBucket": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Fewest rows per position bucket (weakClickRateForPosition)"
+                    },
+                    "ratio": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Share of the bucket's click rate below which a row is a hit (weakClickRateForPosition)"
+                    },
+                    "fallbackToAllDevices": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "description": "Whether a thin device bucket takes the baseline of all devices (weakClickRateForPosition)"
+                    },
+                    "topQueries": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Top queries asked (severalPagesForQuery)"
+                    },
+                    "minImpressionsPerPage": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Fewest impressions per page, scaled (severalPagesForQuery)"
+                    },
+                    "minShare": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Smallest share of the query's impressions per page (severalPagesForQuery)"
+                    },
+                    "minPages": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Fewest pages (severalPagesForQuery)"
+                    },
+                    "candidatesPerPeriod": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Top keys per period (rising and declining)"
+                    },
+                    "minClicksEitherPeriod": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Fewest clicks in either period, scaled (rising and declining)"
+                    },
+                    "minAbsoluteDelta": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Smallest change of clicks, scaled (rising and declining)"
+                    },
+                    "minRelativeDelta": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Smallest relative change (rising and declining)"
+                    },
+                    "maxResults": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Most results"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchPositionBuckets": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchPositionBucket"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchPositionBucket": {
+                "type": "object",
+                "properties": {
+                    "positionFrom": {
+                        "type": "number",
+                        "description": "Lowest position (inclusive, on the rounded-down position)"
+                    },
+                    "positionTo": {
+                        "type": "number",
+                        "description": "Upper bound (exclusive)"
+                    },
+                    "device": {
+                        "type": "string",
+                        "description": "desktop, mobile, tablet or all"
+                    },
+                    "rowCount": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Rows of the bucket with at least the minimum impressions"
+                    },
+                    "clickRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Σ clicks ÷ Σ impressions of those rows; unset without rows"
+                    },
+                    "hasBaseline": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the bucket has at least minRowsPerBucket rows (a baseline of its own)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunity": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "description": "The rule that found it"
+                    },
+                    "subjectType": {
+                        "type": "string",
+                        "description": "query, page or queryPage"
+                    },
+                    "query": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The query"
+                    },
+                    "page": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The page"
+                    },
+                    "device": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The device (weakClickRateForPosition)"
+                    },
+                    "metrics": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetrics"
+                    },
+                    "comparison": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetricsComparison"
+                    },
+                    "baseline": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchClickRateBaseline"
+                    },
+                    "evidenceRows": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Opportunities.SearchClickRateBaseline": {
+                "type": "object",
+                "properties": {
+                    "positionFrom": {
+                        "type": "number",
+                        "description": "Lowest position of the bucket (inclusive, on the rounded-down position)"
+                    },
+                    "positionTo": {
+                        "type": "number",
+                        "description": "Upper bound of the bucket (exclusive)"
+                    },
+                    "baselineScope": {
+                        "type": "string",
+                        "description": "device or allDevices"
+                    },
+                    "clickRate": {
+                        "type": "number",
+                        "description": "Σ clicks ÷ Σ impressions of the bucket's rows"
+                    },
+                    "rowCount": {
+                        "type": "integer",
+                        "description": "Rows the baseline is computed from"
+                    },
+                    "ratio": {
+                        "type": "number",
+                        "description": "The row's click rate must be below ratio × clickRate"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
             "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsIndexingSitemapsGetResponseDto": {
                 "type": "object",
                 "properties": {
@@ -3408,6 +3923,10 @@
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsSites\" />"
         },
         {
+            "name": "SearchClickRateBaseline",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchClickRateBaseline\" />"
+        },
+        {
             "name": "SearchComparisonWindow",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow\" />"
         },
@@ -3418,6 +3937,26 @@
         {
             "name": "SearchMetricsComparison",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetricsComparison\" />"
+        },
+        {
+            "name": "SearchOpportunities",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunities\" />"
+        },
+        {
+            "name": "SearchOpportunity",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunity\" />"
+        },
+        {
+            "name": "SearchOpportunityKindResult",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityKindResult\" />"
+        },
+        {
+            "name": "SearchOpportunityKindResults",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityKindResults\" />"
+        },
+        {
+            "name": "SearchOpportunityThresholds",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchOpportunityThresholds\" />"
         },
         {
             "name": "SearchPageDetail",
@@ -3446,6 +3985,14 @@
         {
             "name": "SearchPerformanceRows",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows\" />"
+        },
+        {
+            "name": "SearchPositionBucket",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchPositionBucket\" />"
+        },
+        {
+            "name": "SearchPositionBuckets",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchPositionBuckets\" />"
         },
         {
             "name": "SearchQueryDetail",
@@ -3494,6 +4041,10 @@
         {
             "name": "SiteInsightsInspectionsPostResponseDto",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSearchOpportunitiesGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchOpportunitiesGetResponseDto\" />"
         },
         {
             "name": "SiteInsightsSearchOverviewGetResponseDto",
@@ -3601,6 +4152,15 @@
                 "SearchPageDetail",
                 "SiteInsightsSearchQueryDetailGetResponseDto",
                 "SearchQueryDetail",
+                "SiteInsightsSearchOpportunitiesGetResponseDto",
+                "SearchOpportunities",
+                "SearchOpportunityKindResults",
+                "SearchOpportunityKindResult",
+                "SearchOpportunityThresholds",
+                "SearchPositionBuckets",
+                "SearchPositionBucket",
+                "SearchOpportunity",
+                "SearchClickRateBaseline",
                 "SiteInsightsIndexingSitemapsGetResponseDto",
                 "SitemapStatuses",
                 "IndexingCoverage",

@@ -1,9 +1,9 @@
 ---
 name: ddd-module-site-insights-specialist
-description: "Search Console data with ddd-site-insights: live reads through ddd-argus, cached, coverage in every answer. Covers install, config/app/SiteInsights (sites, credentials, page groups, cache, budgets incl. URL inspection share), search performance (overview, lists by query, page, country, device with comparison counterparts, page groups, page and query detail, export), indexing (sitemap states, URL inspection of a bounded list, POST only: counts against the daily quota), Sites, Search and Indexing controller traits, commands app:site-insights:sites, check-access, overview, queries, pages, countries, devices, page-groups, page, query, export, sitemaps, inspect (--format=json or toon), npm factory createSiteInsightsApi, extension points, reading rules (Pacific Time days, final vs all, notObserved, sortScope, byPage, verdict). Use when wiring site insights into an app, reading search or indexing data as an agent, checking if URLs are indexed, or on keyUnreadable, tokenRefused, notUserOfProperty, budgetRefused."
+description: "Search Console data with ddd-site-insights: live reads through ddd-argus, cached, coverage in every answer. Covers install, config/app/SiteInsights (sites, credentials, page groups, cache, budgets, opportunity thresholds per site), search performance (overview, lists with comparison counterparts, page groups, details, export), indexing (sitemap states, URL inspection as POST: it counts against the daily quota), opportunities (striking distance, weak click rate per position bucket with all-device fallback, several pages per query, rising and declining), commands app:site-insights:sites, check-access, overview, queries, pages, countries, devices, page-groups, page, query, export, sitemaps, inspect, opportunities (--format=json or toon), npm factory createSiteInsightsApi, reading rules (Pacific Time days, notObserved, byPage, thinBaseline). Use when wiring site insights into an app, reading search, indexing or opportunity data as an agent, or on keyUnreadable, tokenRefused, notUserOfProperty, budgetRefused."
 metadata:
   author: mgamadeus
-  version: "0.1.0-rc.4"
+  version: "0.1.0-rc.5"
   module: mgamadeus/ddd-site-insights
 ---
 
@@ -67,7 +67,7 @@ Raise `revision` when the account behind the entry changes: older cache entries 
 `schemaVersion`), `budgets.php` (share of Google's quotas, `rowsPerCall` 2,500, `maxRowsPerCall` 10,000,
 `sortFetchCeiling` 5,000, timeouts, retention, comparison limits, `counterpart` limits (`keysPerChunk` 100,
 `maxChunks` 5, `regexMaxLength` 4,000), `maxPageGroups` 20, `overviewListSize` 25, `detailListSize` 50,
-`exportRetries` 2, `exportRetryBackoffMilliseconds` 1,000, `callsPerOperation`), `opportunities.php` (thresholds of the rules, used from a later version).
+`exportRetries` 2, `exportRetryBackoffMilliseconds` 1,000, `callsPerOperation`), `opportunities.php` (thresholds of the rules per 28 days; a site overrides single settings, see Opportunities).
 
 Code reads configuration only through `SiteInsightsConfigService`, which returns value objects:
 `getSiteEntries(): SiteInsightsSiteEntries`, `getCredentialsConfig(): SiteInsightsCredentialsConfig` (entries by name,
@@ -105,6 +105,7 @@ whole report to its end with `export`.
 | `app:site-insights:page-groups <site>` | window, format | `searchPageGroupPerformances` |
 | `app:site-insights:page <site> <url>` | window, format | `searchPageDetail` |
 | `app:site-insights:query <site> "<query>"` | window, format | `searchQueryDetail` |
+| `app:site-insights:opportunities <site>` | window, `--kind=<kind>` (one kind; default every kind), format; exit 1 when a kind carries `error` (the payload is printed) | `searchOpportunities` |
 | `app:site-insights:sitemaps <site>` | format; exit 1 when the list failed | `sitemapStatuses` |
 | `app:site-insights:inspect <site> <url>…` | `--languageCode=en-US`, format; 1 to `budgets.maxInspectionUrls` URLs (more: exit 2, nothing sent); needs `canInspect()`; exit 1 when a URL failed (all are printed) | `urlIndexInspections` |
 | `app:site-insights:export <site>` | window, `--dimensions=query,page` (subset of query, page, country, device, date), `--byDay` / `--no-byDay` (default on for query and page together), `--output=<file>`, `--resumeAfter=<Y-m-d>` (continue after that day; inside the window, else exit 2) | NDJSON rows (stdout or the file), then one line `{"searchExportSummary": …}`; exit 1 when it stopped before its end (`limitReached` or `error`) |
@@ -148,6 +149,7 @@ class AdminSiteInsightsSearchController extends AdminController
 | `GET /sites/{siteKey}/search/pageGroups` | Search | window | `searchPageGroupPerformances` |
 | `GET /sites/{siteKey}/search/pageDetail` | Search | window, `url` (required) | `searchPageDetail` |
 | `GET /sites/{siteKey}/search/queryDetail` | Search | window, `query` (required, exact) | `searchQueryDetail` |
+| `GET /sites/{siteKey}/search/opportunities` | Search | window, `kind` (optional) | `searchOpportunities` |
 | `GET /sites/{siteKey}/indexing/sitemaps` | Indexing | — (cached `cache.sitemapsTtlSeconds`, other-resources budget, no daily quota) | `sitemapStatuses` |
 | `POST /sites/{siteKey}/indexing/inspections` | Indexing | body `urls` (`string[]`, 1 to `budgets.maxInspectionUrls`), `languageCode` (optional, `en` or `en-US`); needs `canInspect()`; each URL not cached counts one inspection | `urlIndexInspections` |
 
@@ -174,7 +176,7 @@ npm: `createSiteInsightsApi({ baseApi, apiPrefix: '/api/admin/siteInsights' })` 
 injects these operations into the application's RTK Query api once (tag `SiteInsights`) and returns the hooks
 `useSitesQuery`, `useCheckAccessMutation`, `useSearchOverviewQuery`, `useSearchQueriesQuery`, `useSearchPagesQuery`,
 `useSearchCountriesQuery`, `useSearchDevicesQuery`, `useSearchPageGroupsQuery`, `useSearchPageDetailQuery`,
-`useSearchQueryDetailQuery`, `useIndexingSitemapsQuery`, `useInspectUrlsMutation` (body under the generated key
+`useSearchQueryDetailQuery`, `useSearchOpportunitiesQuery`, `useIndexingSitemapsQuery`, `useInspectUrlsMutation` (body under the generated key
 `dddPresentationApiAdminSiteInsightsDtosSiteInsightsInspectionsPostRequestDto`; call it from a user action only). Keep the module's tag out of the application's own generated SDK (`filterEndpoints`).
 View logic of the same entry: `formatDelta()`, `formatCoverageNotes()`, `formatWindowNote()`, `windowPresets`.
 
@@ -236,6 +238,38 @@ carries `coverage` or `error`. Read these before a number:
   `inspectionsCounted` (what this request charged to the daily counter, retries included), `fromCache`, `fetchedAt`
   (oldest answer), `cacheLifetimeSeconds`. `inspectionCounterScope` says whether the daily counter is `shared`,
   `perPod` (each pod counts alone, see below) or `notCounted`.
+
+## Opportunities: rules, thresholds, what an answer means
+
+`GET /sites/{siteKey}/search/opportunities` / `app:site-insights:opportunities` evaluate fixed rules over the rows of
+one window and return **candidates with evidence, never diagnoses**. `searchOpportunities.elements` holds every result
+(`kind`, `subjectType` query/page, `query`, `page`, `device`, `metrics`, `comparison`, `baseline`, `evidenceRows`);
+`searchOpportunities.kinds` holds one result per kind evaluated: `resultCount`, `emptyReason` (`noRows`,
+`belowThresholds`, `windowTooShort`, `noComparison`, `thinBaseline`, `sourceFailed`), `error` (for example
+`budgetRefused`), `isPartial`, `thresholds` (as applied: clicks and impressions scaled to the window), `sourceCoverage`,
+`providerCalls`, `note` (what the kind does not prove), `positionBuckets`, `observedInOnePeriodOnly`.
+
+| Kind | Source | Hit |
+|---|---|---|
+| `strikingDistanceQuery` | queries, provider order, up to `sortFetchCeiling` | `positionFrom` 8 ≤ position ≤ `positionTo` 20, impressions ≥ `minImpressions` 100; brand left out; by impressions; `maxResults` 50 |
+| `weakClickRateForPosition` | query × device, up to `sortFetchCeiling`, brand left out | rows with impressions ≥ `minImpressions` 50 in buckets [1,2) [2,3) [3,4) [4,6) [6,11) of the rounded-down position; click rate < `ratio` 0.5 × the bucket's Σ clicks ÷ Σ impressions; a device bucket below `minRowsPerBucket` 5 takes the all-devices bucket when `fallbackToAllDevices` (default on): `baseline.baselineScope` `device` or `allDevices` |
+| `severalPagesForQuery` | the top `topQueries` 50 queries in one query × page report (RE2 chunks, `pagesPerQueryMax` 10 rows per query) | ≥ `minPages` 2 pages with impressions ≥ `minImpressionsPerPage` 20 and a share ≥ `minShare` 0.1 of the query's impressions in the report |
+| `risingQuery` · `decliningQuery` · `risingPage` · `decliningPage` | top `candidatesPerPeriod` 100 keys of the window **and** of the comparison window (default `previousPeriod`; `compare` chooses another), the missing side asked by key | observed in both periods; clicks delta ≥ `minAbsoluteDelta` 5, delta ÷ max(previous, 1) ≥ `minRelativeDelta` 0.3, max(current, previous) ≥ `minClicksEitherPeriod` 10; partial comparison: the previous clicks normalised to the window's days; keys seen in one period only go to `observedInOnePeriodOnly`, never ranked as new or lost |
+
+- **Thresholds** in clicks or impressions are per 28 days, scaled `ceil(value × days ÷ 28)`; every kind needs
+  `minWindowDays` (7) days (`windowTooShort`). Brand queries match the site's `brandQueryPatterns`.
+- **Per site:** a site entry of `sites.php` may carry `'opportunities' => ['weakClickRateForPosition' =>
+  ['minRowsPerBucket' => 3], 'minWindowDays' => 14]` — same shape as `opportunities.php`, applied setting by setting
+  over the application's file. An unknown rule or setting, or a value of the wrong type, fails loudly naming it.
+- **`thinBaseline`:** no bucket reached `minRowsPerBucket` (with the fallback: neither the device nor the all-devices
+  bucket). `positionBuckets` lists every bucket (`device` desktop/mobile/tablet/all, `positionFrom`, `positionTo`,
+  `rowCount`, `clickRate`, `hasBaseline`), so a screen can say how many rows were missing. On a small site lower
+  `minImpressions` or `minRowsPerBucket` for that site, or widen the window.
+- **Budget:** sources are shared (the query list serves strikingDistance, severalPages and the query comparison) and
+  counted at the first kind that reads them; with the defaults all kinds plan 13 calls (the probe counts as one). A
+  kind that would go beyond `callsPerOperation.opportunities` (20) is returned with `error` `budgetRefused`, never left
+  out.
+- A GET: opportunities count no daily quota, and the lists they read are cached like every search read.
 
 ## Error causes (`SiteInsightsErrorCause`)
 

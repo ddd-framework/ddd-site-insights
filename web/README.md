@@ -27,16 +27,18 @@ export const siteInsightsApi = createSiteInsightsApi({ baseApi: api, apiPrefix: 
 const { data } = siteInsightsApi.useSearchQueriesQuery({ siteKey: 'example-site', compare: 'previousPeriod', limit: 100 });
 ```
 
-The factory injects the module's twelve operations into the application's RTK Query api once (a second call with the
+The factory injects the module's thirteen operations into the application's RTK Query api once (a second call with the
 same api returns the first result) under the tag `SiteInsights`, rebasing the generated request builders onto
 `apiPrefix`. Hooks: `useSitesQuery`, `useCheckAccessMutation` (a POST that counts a URL inspection: call it on demand),
 `useSearchOverviewQuery`, `useSearchQueriesQuery`, `useSearchPagesQuery`, `useSearchCountriesQuery`,
 `useSearchDevicesQuery`, `useSearchPageGroupsQuery`, `useSearchPageDetailQuery`, `useSearchQueryDetailQuery`,
-`useIndexingSitemapsQuery` and `useInspectUrlsMutation`. Keep the module's tag out of the application's own generated
+`useSearchOpportunitiesQuery`, `useIndexingSitemapsQuery` and `useInspectUrlsMutation`. Keep the module's tag out of the application's own generated
 SDK (`filterEndpoints`).
 
 Anything that counts a URL inspection against the provider's daily quota is a mutation (a POST on the server), never a
-query: nothing refetches it on its own, and it invalidates nothing. Trigger it from a user action:
+query: nothing refetches it on its own, and it invalidates nothing (`invalidatesTags: []`, also in the generated
+enhance step; the access check likewise), so a call never refetches the queries on screen. An application that
+overrode the invalidation of these two paths can drop its override. Trigger it from a user action:
 
 ```ts
 const [inspectUrls, { data }] = siteInsightsApi.useInspectUrlsMutation();

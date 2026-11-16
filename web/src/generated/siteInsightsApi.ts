@@ -18,6 +18,8 @@ import { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiResponse } from ".
 import { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse";
 import { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg";
+import { GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse";
+import { GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse";
 import { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg";
 import { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse } from "./models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse";
@@ -95,6 +97,13 @@ const injectedRtkApi = api.injectEndpoints({
     >({
       query:
         siteInsightsApiRequests.getAdminSiteInsightsSitesSearchQueryDetailBySiteKey,
+    }),
+    getAdminSiteInsightsSitesSearchOpportunitiesBySiteKey: build.query<
+      GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiResponse,
+      GetAdminSiteInsightsSitesSearchOpportunitiesBySiteKeyApiArg
+    >({
+      query:
+        siteInsightsApiRequests.getAdminSiteInsightsSitesSearchOpportunitiesBySiteKey,
     }),
     getAdminSiteInsightsSitesIndexingSitemapsBySiteKey: build.query<
       GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,

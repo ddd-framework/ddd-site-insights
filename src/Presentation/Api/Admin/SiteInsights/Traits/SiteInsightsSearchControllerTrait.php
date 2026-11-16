@@ -7,11 +7,14 @@ namespace DDD\Presentation\Api\Admin\SiteInsights\Traits;
 use DDD\Domain\SiteInsights\Entities\Search\SearchListRequest;
 use DDD\Domain\SiteInsights\Exceptions\SiteInsightsBudgetExceededException;
 use DDD\Domain\SiteInsights\Exceptions\SiteInsightsProviderUnavailableException;
+use DDD\Domain\SiteInsights\Services\SearchOpportunitiesService;
 use DDD\Domain\SiteInsights\Services\SearchPerformanceService;
 use DDD\Infrastructure\Exceptions\BadRequestException;
 use DDD\Infrastructure\Exceptions\ForbiddenException;
 use DDD\Infrastructure\Exceptions\InternalErrorException;
 use DDD\Infrastructure\Exceptions\NotFoundException;
+use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSearchOpportunitiesGetResponseDto;
+use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSearchOpportunitiesRequestDto;
 use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSearchOverviewGetResponseDto;
 use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSearchPageDetailGetResponseDto;
 use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSearchPageDetailRequestDto;
@@ -253,6 +256,32 @@ trait SiteInsightsSearchControllerTrait
         $this->requireSiteInsightsViewer();
         $responseDto = new SiteInsightsSearchRowsGetResponseDto();
         $responseDto->searchPerformanceRows = $searchPerformanceService->getRows($requestDto->siteKey, $requestDto->buildSearchListRequest($dimension));
+        return $responseDto;
+    }
+
+    /**
+     * The candidates of the opportunity rules for one window, with one result per kind (thresholds, coverage of the
+     * source, why a kind is empty, or its error). All kinds together plan at most budgets.callsPerOperation.opportunities
+     * provider calls; a kind beyond it carries `error` budgetRefused. A GET: it counts no daily quota.
+     *
+     * @param SiteInsightsSearchOpportunitiesRequestDto $requestDto
+     * @param SearchOpportunitiesService $searchOpportunitiesService
+     * @return SiteInsightsSearchOpportunitiesGetResponseDto
+     * @throws ForbiddenException
+     * @throws NotFoundException
+     * @throws BadRequestException
+     * @throws InternalErrorException
+     * @throws SiteInsightsProviderUnavailableException
+     */
+    #[Get('/sites/{siteKey}/search/opportunities')]
+    #[Summary('SiteInsights Search Opportunities')]
+    public function getSiteInsightsSearchOpportunities(
+        SiteInsightsSearchOpportunitiesRequestDto $requestDto,
+        SearchOpportunitiesService $searchOpportunitiesService
+    ): SiteInsightsSearchOpportunitiesGetResponseDto {
+        $this->requireSiteInsightsViewer();
+        $responseDto = new SiteInsightsSearchOpportunitiesGetResponseDto();
+        $responseDto->searchOpportunities = $searchOpportunitiesService->getOpportunities($requestDto->siteKey, $requestDto->buildSearchOpportunitiesRequest());
         return $responseDto;
     }
 }

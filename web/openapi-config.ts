@@ -17,7 +17,12 @@ export default defineConfig({
       exportName: 'siteInsightsApi',
       audience: 'admin',
       hooks: false,
-      sideEffects: [{ method: 'POST', path: /\/indexing\/inspections$/, sideEffects: true }],
+      // the two POSTs only read (they are POST because each call counts URL inspections against the provider's daily
+      // quota): mutations that invalidate nothing, so a call never refetches the queries on screen
+      sideEffects: [
+        { method: 'POST', path: /\/indexing\/inspections$/, sideEffects: false, endpointType: 'mutation' },
+        { method: 'POST', path: /\/accessChecks$/, sideEffects: false, endpointType: 'mutation' },
+      ],
     },
   ],
 });

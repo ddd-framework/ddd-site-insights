@@ -5,9 +5,10 @@ knows about your websites, readable in the admin and by agents. The module reads
 [`mgamadeus/ddd-argus`](https://github.com/ddd-framework/ddd-argus), caches the answers, stores nothing, and states in
 every answer what it covers (which days, which data state, how many rows of how many, how aggregated).
 
-Status: `0.1.0-rc.4` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
+Status: `0.1.0-rc.5` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
 coverage model, access checks), search performance (overview, lists with comparison counterparts, page groups,
-page and query detail, export) and indexing (sitemap states, URL inspection). Opportunities follow.
+page and query detail, export), indexing (sitemap states, URL inspection) and opportunities (fixed rules that return
+candidates with their evidence).
 
 ## Install
 
@@ -26,7 +27,8 @@ Files under `config/app/SiteInsights/` of the application replace the module's f
   credentials entry, brand query patterns and page groups (RE2 patterns).
 - `credentials.php` — entries naming the environment variable that holds the service-account JSON key (base64, one
   line) and a revision; the read-only scope.
-- `cache.php`, `budgets.php`, `opportunities.php` — lifetimes, call budgets and limits, rule thresholds.
+- `cache.php`, `budgets.php`, `opportunities.php` — lifetimes, call budgets and limits, rule thresholds (per 28 days,
+  scaled to the window). A site entry may override single thresholds with its own `opportunities` setting.
 
 ```php
 // config/app/SiteInsights/credentials.php
@@ -59,13 +61,15 @@ php bin/console app:site-insights:query example-site "example widget"
 php bin/console app:site-insights:export example-site --dimensions=query,page --output=rows.ndjson
 # a run that ended with an error: same window, continue after its lastFinishedDay
 php bin/console app:site-insights:export example-site --from=2025-07-20 --to=2026-11-13 --resumeAfter=2026-05-29 --output=rows-2.ndjson
+php bin/console app:site-insights:opportunities example-site --preset=90d --format=json
+php bin/console app:site-insights:opportunities example-site --kind=weakClickRateForPosition
 php bin/console app:site-insights:sitemaps example-site
 php bin/console app:site-insights:inspect example-site https://example.test/ https://example.test/guides/alpha/ --format=json
 ```
 
 Admin API: mount `SiteInsightsSitesControllerTrait` (`GET /sites`, `POST /sites/{siteKey}/accessChecks`) and
 `SiteInsightsSearchControllerTrait` (`GET /sites/{siteKey}/search/overview`, `…/queries`, `…/pages`, `…/countries`,
-`…/devices`, `…/pageGroups`, `…/pageDetail?url=`, `…/queryDetail?query=`) and `SiteInsightsIndexingControllerTrait`
+`…/devices`, `…/pageGroups`, `…/pageDetail?url=`, `…/queryDetail?query=`, `…/opportunities?kind=`) and `SiteInsightsIndexingControllerTrait`
 (`GET /sites/{siteKey}/indexing/sitemaps`, `POST /sites/{siteKey}/indexing/inspections` with the body
 `{"urls": [...], "languageCode": "en-US"}`) in controllers of the application. Who may read and who may inspect is
 decided by `SiteInsightsAccessPolicyService` (default: admin accounts); an application registers its own subclass under

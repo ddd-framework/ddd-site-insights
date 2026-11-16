@@ -13,10 +13,7 @@ export const siteInsightsApiEnhanced = codegenBaseApi.enhanceEndpoints({
       providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
     },
     postAdminSiteInsightsSitesAccessChecksBySiteKey: {
-      invalidatesTags: [
-        { type: "Siteinsights" as const, id: "LIST" },
-        { type: "Siteinsights" as const },
-      ],
+      invalidatesTags: [],
     },
     getAdminSiteInsightsSitesSearchOverviewBySiteKey: {
       providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
@@ -42,14 +39,14 @@ export const siteInsightsApiEnhanced = codegenBaseApi.enhanceEndpoints({
     getAdminSiteInsightsSitesSearchQueryDetailBySiteKey: {
       providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
     },
+    getAdminSiteInsightsSitesSearchOpportunitiesBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
     getAdminSiteInsightsSitesIndexingSitemapsBySiteKey: {
       providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
     },
     postAdminSiteInsightsSitesIndexingInspectionsBySiteKey: {
-      invalidatesTags: [
-        { type: "Siteinsights" as const, id: "LIST" },
-        { type: "Siteinsights" as const },
-      ],
+      invalidatesTags: [],
     },
   },
 });

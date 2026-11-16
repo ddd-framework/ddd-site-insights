@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.1.0-rc.5
+
+Opportunities.
+
+### Added
+- `SearchOpportunitiesService::getOpportunities()`: fixed rules over the rows of one window that return candidates with
+  their evidence rows, never diagnoses. Kinds `strikingDistanceQuery`, `weakClickRateForPosition`,
+  `severalPagesForQuery`, `risingQuery`, `decliningQuery`, `risingPage`, `decliningPage`; one kind result each with
+  `resultCount`, `emptyReason` (`noRows`, `belowThresholds`, `windowTooShort`, `noComparison`, `thinBaseline`,
+  `sourceFailed`), `error`, `thresholds` (scaled to the window), `sourceCoverage`, `providerCalls`, `note`.
+- `weakClickRateForPosition`: position buckets per device with an all-devices fallback for a thin device bucket (on by
+  default; `baseline.baselineScope` `device` or `allDevices`); `positionBuckets` with the row count of every bucket
+  (why a result is `thinBaseline`). Module defaults `minImpressions` 50 and `minRowsPerBucket` 5.
+- Rising and declining: candidates from both periods (comparison `previousPeriod` unless `compare` asks another),
+  counterparts asked by key, keys of one period only in `observedInOnePeriodOnly`.
+- Thresholds per site: a site entry's `opportunities` setting overrides `opportunities.php` setting by setting
+  (`SiteInsightsConfigService::getOpportunitiesConfig($siteKey)`, typed `SiteInsightsOpportunitiesConfig`); unknown
+  settings fail loudly.
+- Call budget `callsPerOperation.opportunities` (20) for all kinds together; sources are shared between kinds; a kind
+  beyond it carries `error` `budgetRefused`.
+- Endpoint `GET /sites/{siteKey}/search/opportunities` (`kind` optional) in `SiteInsightsSearchControllerTrait`;
+  command `app:site-insights:opportunities <site> [--kind=]` (`--format=table|json|toon`).
+- npm: `useSearchOpportunitiesQuery`, `searchOpportunities` in `buildSiteInsightsRequests`; the opportunity types.
+
+### Fixed
+- npm: the two POSTs that only read (`…/sites/{siteKey}/indexing/inspections`, `…/sites/{siteKey}/accessChecks`) invalidate
+  no tag, in the factory and in the generated enhance step (before, the generated step invalidated the whole tag type,
+  and every query on screen refetched after each call): consumers can drop their own invalidation override for these
+  two paths.
+
 ## 0.1.0-rc.4
 
 Indexing.
