@@ -3,7 +3,7 @@ name: ddd-module-site-insights-specialist
 description: "Search Console data with ddd-site-insights: live reads through ddd-argus, cached, coverage in every answer. Covers install, config/app/SiteInsights (sites, credentials, page groups, cache, budgets, opportunity thresholds per site), search performance (overview, lists with comparison counterparts, page groups, details, export), indexing (sitemap states, URL inspection as POST: it counts against the daily quota), opportunities (striking distance, weak click rate per position bucket with all-device fallback, several pages per query, rising and declining), commands app:site-insights:sites, check-access, overview, queries, pages, countries, devices, page-groups, page, query, export, sitemaps, inspect, opportunities (--format=json or toon), npm factory createSiteInsightsApi, reading rules (Pacific Time days, notObserved, byPage, thinBaseline). Use when wiring site insights into an app, reading search, indexing or opportunity data as an agent, or on keyUnreadable, tokenRefused, notUserOfProperty, budgetRefused."
 metadata:
   author: mgamadeus
-  version: "0.1.0-rc.8"
+  version: "0.1.0-rc.9"
   module: mgamadeus/ddd-site-insights
 ---
 
@@ -114,7 +114,12 @@ whole report to its end with `export`.
 `searchAnalytics`, `sitemaps`, `urlInspection`, `budgetCountersShared` — each `ok`, `warning` (works with a limit,
 see `detail`), `failed` with `cause`, or `skipped`. `budgetCountersShared` is `ok` for `shared` and `warning` for
 `perPod` or `notCounted`; a warning does not fail the command (exit 0). `detail` is a readable English sentence;
-`detailCode` holds the code of capabilities that have one (`budgetCountersShared`: `shared`, `perPod`, `notCounted`).
+`detailCode` plus `values` (`SiteInsightsAccessCheckValues`, only the code's fields set) let a translated host word the
+line itself: `propertyListed` → `propertyListed` `{ level }` (ok) or `propertyNotListed` `{ listedProperties }` (failed,
+not in the sites list); `permissionLevel` → `permissionLevel` `{ level }`; `searchAnalytics` → `rowsRead` `{ rows }`;
+`sitemaps` → `sitemapsListed` `{ files }`; `urlInspection` → `inspectionVerdict` `{ verdict }`;
+`budgetCountersShared` → `shared`, `perPod`, `notCounted` (no values). `keyReadable`, `tokenObtained`, provider
+failures (worded by `cause`) and skipped lines carry neither.
 `export` is console only (no endpoint), never cached, needs `canExport()`, and stops at
 `budgets.callsPerOperation.export` calls with `limitReached` and `lastFinishedDay`. A page whose call fails with a
 retryable cause (`transport`, `providerFailed`, `quotaExceeded`; not `budgetRefused`) is asked again up to

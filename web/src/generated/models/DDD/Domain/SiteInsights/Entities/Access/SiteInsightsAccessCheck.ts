@@ -1,3 +1,5 @@
+import { SiteInsightsAccessCheckValues } from "./SiteInsightsAccessCheckValues";
+
 export type SiteInsightsAccessCheck = {
   /** Key of the site */
   siteKey?: string;
@@ -5,8 +7,8 @@ export type SiteInsightsAccessCheck = {
      Allowed Values:
     -   `keyReadable`
     -   `tokenObtained`
-    -   `propertyListed`
-    -   `permissionLevel`
+    -   `propertyListed`: detailCode of propertyListed ok: values.level
+    -   `permissionLevel`: detailCode of permissionLevel ok: values.level
     -   `searchAnalytics`
     -   `sitemaps`
     -   `urlInspection`
@@ -33,8 +35,11 @@ export type SiteInsightsAccessCheck = {
   cause?: string | null;
   /** What failed or what was found (e.g. the permission level), without secrets */
   detail?: string | null;
-  /** A coded detail for capabilities that have one: budgetCountersShared → shared, perPod or notCounted */
+  /** A coded detail for hosts that word the line themselves: budgetCountersShared → shared, perPod or
+    notCounted; propertyListed → propertyListed or propertyNotListed; permissionLevel → permissionLevel;
+    searchAnalytics → rowsRead; sitemaps → sitemapsListed; urlInspection → inspectionVerdict */
   detailCode?: string | null;
+  values?: SiteInsightsAccessCheckValues;
   /** The fully qualified class name of the object */
   objectType?: string | null;
 };

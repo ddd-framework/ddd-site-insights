@@ -51,6 +51,7 @@ export {
 
 // generated from schema/site-insights.openapi.json (do not edit the generated files; run `pnpm generate`)
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Access/SiteInsightsAccessCheck';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Access/SiteInsightsAccessCheckValues';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Access/SiteInsightsAccessChecks';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/IndexingCoverage';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/SitemapContentCount';

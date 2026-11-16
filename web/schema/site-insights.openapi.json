@@ -2264,7 +2264,7 @@
                             "urlInspection",
                             "budgetCountersShared"
                         ],
-                        "description": "The capability checked  \n Allowed Values:  \n-   `keyReadable`\n-   `tokenObtained`\n-   `propertyListed`\n-   `permissionLevel`\n-   `searchAnalytics`\n-   `sitemaps`\n-   `urlInspection`\n-   `budgetCountersShared`\n"
+                        "description": "The capability checked  \n Allowed Values:  \n-   `keyReadable`\n-   `tokenObtained`\n-   `propertyListed`: detailCode of propertyListed ok: values.level\n-   `permissionLevel`: detailCode of permissionLevel ok: values.level\n-   `searchAnalytics`\n-   `sitemaps`\n-   `urlInspection`\n-   `budgetCountersShared`\n"
                     },
                     "state": {
                         "type": "string",
@@ -2289,7 +2289,46 @@
                     "detailCode": {
                         "type": "string",
                         "nullable": true,
-                        "description": "A coded detail for capabilities that have one: budgetCountersShared → shared, perPod or notCounted"
+                        "description": "A coded detail for hosts that word the line themselves: budgetCountersShared → shared, perPod or\nnotCounted; propertyListed → propertyListed or propertyNotListed; permissionLevel → permissionLevel;\nsearchAnalytics → rowsRead; sitemaps → sitemapsListed; urlInspection → inspectionVerdict"
+                    },
+                    "values": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheckValues"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheckValues": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "`rowsRead`: rows the one-row Search Analytics call returned"
+                    },
+                    "files": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "`sitemapsListed`: sitemap files in the list"
+                    },
+                    "verdict": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "`inspectionVerdict`: the verdict of the inspected root URL (e.g. PASS), or unknown"
+                    },
+                    "level": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "`permissionLevel`: the provider's permission level name, or unknown"
+                    },
+                    "listedProperties": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "`propertyNotListed`: properties the credentials entry lists"
                     },
                     "objectType": {
                         "type": "string",
@@ -4059,6 +4098,10 @@
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheck\" />"
         },
         {
+            "name": "SiteInsightsAccessCheckValues",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessCheckValues\" />"
+        },
+        {
             "name": "SiteInsightsAccessChecks",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Access.SiteInsightsAccessChecks\" />"
         },
@@ -4162,6 +4205,7 @@
                 "SiteInsightsAccessChecksGetResponseDto",
                 "SiteInsightsAccessChecks",
                 "SiteInsightsAccessCheck",
+                "SiteInsightsAccessCheckValues",
                 "BadRequestException",
                 "ValidationErrors",
                 "ValidationError",

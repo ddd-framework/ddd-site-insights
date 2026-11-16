@@ -40,6 +40,19 @@ class SiteInsightsAccessCheck extends ValueObject
     public const string STATE_FAILED = 'failed';
     public const string STATE_SKIPPED = 'skipped';
 
+    /** detailCode of propertyListed ok: values.level */
+    public const string DETAIL_CODE_PROPERTY_LISTED = 'propertyListed';
+    /** detailCode of propertyListed failed because the property is missing: values.listedProperties */
+    public const string DETAIL_CODE_PROPERTY_NOT_LISTED = 'propertyNotListed';
+    /** detailCode of permissionLevel ok: values.level */
+    public const string DETAIL_CODE_PERMISSION_LEVEL = 'permissionLevel';
+    /** detailCode of searchAnalytics ok: values.rows */
+    public const string DETAIL_CODE_ROWS_READ = 'rowsRead';
+    /** detailCode of sitemaps ok: values.files */
+    public const string DETAIL_CODE_SITEMAPS_LISTED = 'sitemapsListed';
+    /** detailCode of urlInspection ok: values.verdict */
+    public const string DETAIL_CODE_INSPECTION_VERDICT = 'inspectionVerdict';
+
     /** Works, with a limit the operator should know (e.g. call counters per pod instead of shared) */
     public const string STATE_WARNING = 'warning';
 
@@ -60,8 +73,15 @@ class SiteInsightsAccessCheck extends ValueObject
     /** @var string|null What failed or what was found (e.g. the permission level), without secrets */
     public ?string $detail;
 
-    /** @var string|null A coded detail for capabilities that have one: budgetCountersShared → shared, perPod or notCounted */
+    /**
+     * @var string|null A coded detail for hosts that word the line themselves: budgetCountersShared → shared, perPod or
+     * notCounted; propertyListed → propertyListed or propertyNotListed; permissionLevel → permissionLevel;
+     * searchAnalytics → rowsRead; sitemaps → sitemapsListed; urlInspection → inspectionVerdict
+     */
     public ?string $detailCode;
+
+    /** @var SiteInsightsAccessCheckValues|null The numbers and names of the detail; set with the detailCodes that have any */
+    public ?SiteInsightsAccessCheckValues $values;
 
     /**
      * @param string $siteKey
@@ -70,6 +90,7 @@ class SiteInsightsAccessCheck extends ValueObject
      * @param SiteInsightsErrorCause|null $siteInsightsErrorCause
      * @param string|null $detail
      * @param string|null $detailCode
+     * @param SiteInsightsAccessCheckValues|null $siteInsightsAccessCheckValues
      * @return static
      */
     public static function create(
@@ -78,7 +99,8 @@ class SiteInsightsAccessCheck extends ValueObject
         string $state,
         ?SiteInsightsErrorCause $siteInsightsErrorCause = null,
         ?string $detail = null,
-        ?string $detailCode = null
+        ?string $detailCode = null,
+        ?SiteInsightsAccessCheckValues $siteInsightsAccessCheckValues = null
     ): static {
         $siteInsightsAccessCheck = new static();
         $siteInsightsAccessCheck->siteKey = $siteKey;
@@ -89,6 +111,9 @@ class SiteInsightsAccessCheck extends ValueObject
         }
         if ($detailCode !== null) {
             $siteInsightsAccessCheck->detailCode = $detailCode;
+        }
+        if ($siteInsightsAccessCheckValues !== null) {
+            $siteInsightsAccessCheck->values = $siteInsightsAccessCheckValues;
         }
         if ($detail !== null && $detail !== '') {
             $siteInsightsAccessCheck->detail = self::redactDetail($detail);

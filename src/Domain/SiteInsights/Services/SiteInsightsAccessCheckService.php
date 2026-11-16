@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DDD\Domain\SiteInsights\Services;
 
 use DDD\Domain\SiteInsights\Entities\Access\SiteInsightsAccessCheck;
+use DDD\Domain\SiteInsights\Entities\Access\SiteInsightsAccessCheckValues;
 use DDD\Domain\SiteInsights\Entities\Access\SiteInsightsAccessChecks;
 use DDD\Domain\SiteInsights\Entities\Errors\SiteInsightsErrorCause;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleApiFailure;
@@ -75,15 +76,18 @@ class SiteInsightsAccessCheckService extends Service
             if (isset($googleSites->failure)) {
                 $this->addFailureCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_PROPERTY_LISTED, $googleSites->failure);
             } elseif ($googleSiteEntry = $googleSites->siteEntries?->findBySiteUrl($insightsSite->property)) {
-                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_PROPERTY_LISTED, SiteInsightsAccessCheck::STATE_OK, null, $googleSiteEntry->permissionLevel);
+                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_PROPERTY_LISTED, SiteInsightsAccessCheck::STATE_OK, null, $googleSiteEntry->permissionLevel, SiteInsightsAccessCheck::DETAIL_CODE_PROPERTY_LISTED, SiteInsightsAccessCheckValues::forLevel($googleSiteEntry->permissionLevel ?? 'unknown'));
             } else {
+                $listedProperties = count($googleSites->siteEntries?->getElements() ?? []);
                 $this->addCheck(
                     $siteInsightsAccessChecks,
                     $insightsSite,
                     SiteInsightsAccessCheck::CAPABILITY_PROPERTY_LISTED,
                     SiteInsightsAccessCheck::STATE_FAILED,
                     SiteInsightsErrorCause::NOT_USER_OF_PROPERTY,
-                    'the property is not in the sites list of the credentials entry (' . count($googleSites->siteEntries?->getElements() ?? []) . ' listed)'
+                    'the property is not in the sites list of the credentials entry (' . $listedProperties . ' listed)',
+                    SiteInsightsAccessCheck::DETAIL_CODE_PROPERTY_NOT_LISTED,
+                    SiteInsightsAccessCheckValues::forListedProperties($listedProperties)
                 );
             }
 
@@ -91,7 +95,7 @@ class SiteInsightsAccessCheckService extends Service
             if (isset($googleSite->failure)) {
                 $this->addFailureCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_PERMISSION_LEVEL, $googleSite->failure);
             } else {
-                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_PERMISSION_LEVEL, SiteInsightsAccessCheck::STATE_OK, null, $googleSite->permissionLevel ?? 'unknown');
+                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_PERMISSION_LEVEL, SiteInsightsAccessCheck::STATE_OK, null, $googleSite->permissionLevel ?? 'unknown', SiteInsightsAccessCheck::DETAIL_CODE_PERMISSION_LEVEL, SiteInsightsAccessCheckValues::forLevel($googleSite->permissionLevel ?? 'unknown'));
             }
 
             $searchReports = $googleSearchConsoleSourceService->loadReports(
@@ -110,21 +114,24 @@ class SiteInsightsAccessCheckService extends Service
                     $searchPerformanceRows?->error?->message ?? 'no answer'
                 );
             } else {
-                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_SEARCH_ANALYTICS, SiteInsightsAccessCheck::STATE_OK, null, count($searchPerformanceRows->getElements()) . ' row(s)');
+                $rowsRead = count($searchPerformanceRows->getElements());
+                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_SEARCH_ANALYTICS, SiteInsightsAccessCheck::STATE_OK, null, $rowsRead . ' row(s)', SiteInsightsAccessCheck::DETAIL_CODE_ROWS_READ, SiteInsightsAccessCheckValues::forRows($rowsRead));
             }
 
             $googleSitemaps = $googleSearchConsoleSourceService->loadSitemaps($insightsSite, false);
             if (isset($googleSitemaps->failure)) {
                 $this->addFailureCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_SITEMAPS, $googleSitemaps->failure);
             } else {
-                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_SITEMAPS, SiteInsightsAccessCheck::STATE_OK, null, count($googleSitemaps->sitemaps?->getElements() ?? []) . ' sitemap file(s)');
+                $sitemapFiles = count($googleSitemaps->sitemaps?->getElements() ?? []);
+                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_SITEMAPS, SiteInsightsAccessCheck::STATE_OK, null, $sitemapFiles . ' sitemap file(s)', SiteInsightsAccessCheck::DETAIL_CODE_SITEMAPS_LISTED, SiteInsightsAccessCheckValues::forFiles($sitemapFiles));
             }
 
             $googleUrlInspection = $googleSearchConsoleSourceService->inspectUrl($insightsSite, $insightsSite->getPropertyRootUrl(), null, false);
             if (isset($googleUrlInspection->failure)) {
                 $this->addFailureCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION, $googleUrlInspection->failure);
             } else {
-                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION, SiteInsightsAccessCheck::STATE_OK, null, 'verdict ' . ($googleUrlInspection->verdict ?? 'unknown'));
+                $inspectionVerdict = $googleUrlInspection->verdict ?? 'unknown';
+                $this->addCheck($siteInsightsAccessChecks, $insightsSite, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION, SiteInsightsAccessCheck::STATE_OK, null, 'verdict ' . $inspectionVerdict, SiteInsightsAccessCheck::DETAIL_CODE_INSPECTION_VERDICT, SiteInsightsAccessCheckValues::forVerdict($inspectionVerdict));
             }
         } else {
             foreach ([
@@ -182,9 +189,10 @@ class SiteInsightsAccessCheckService extends Service
         string $state,
         ?SiteInsightsErrorCause $siteInsightsErrorCause = null,
         ?string $detail = null,
-        ?string $detailCode = null
+        ?string $detailCode = null,
+        ?SiteInsightsAccessCheckValues $siteInsightsAccessCheckValues = null
     ): void {
-        $siteInsightsAccessCheck = SiteInsightsAccessCheck::create($insightsSite->key, $capability, $state, $siteInsightsErrorCause, $detail, $detailCode);
+        $siteInsightsAccessCheck = SiteInsightsAccessCheck::create($insightsSite->key, $capability, $state, $siteInsightsErrorCause, $detail, $detailCode, $siteInsightsAccessCheckValues);
         $siteInsightsAccessChecks->add($siteInsightsAccessCheck);
     }
 

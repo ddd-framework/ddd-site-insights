@@ -73,7 +73,9 @@ Admin API: mount `SiteInsightsSitesControllerTrait` (`GET /sites`, `POST /sites/
 `SiteInsightsSearchControllerTrait` (`GET /sites/{siteKey}/search/overview`, `…/queries`, `…/pages`, `…/countries`,
 `…/devices`, `…/pageGroups`, `…/pageDetail?url=`, `…/queryDetail?query=`, `…/opportunities?kind=`) and `SiteInsightsIndexingControllerTrait`
 (`GET /sites/{siteKey}/indexing/sitemaps`, `POST /sites/{siteKey}/indexing/inspections` with the body
-`{"urls": [...], "languageCode": "en-US"}`) in controllers of the application. Who may read and who may inspect is
+`{"urls": [...], "languageCode": "en-US"}`) in controllers of the application. Each access check line carries an English `detail` and, for
+hosts that word it themselves, `detailCode` with typed `values` (e.g. `rowsRead` `{ rows }`, `inspectionVerdict`
+`{ verdict }`). Who may read and who may inspect is
 decided by `SiteInsightsAccessPolicyService` (default: admin accounts); an application registers its own subclass under
 that service id.
 

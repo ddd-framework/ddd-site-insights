@@ -47,7 +47,25 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
         $countersCheckPerPod = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_BUDGET_COUNTERS_SHARED);
         self::assertSame('perPod', $countersCheckPerPod->detailCode);
         self::assertStringContainsString('per pod', $countersCheckPerPod->detail, 'a readable sentence');
-        self::assertFalse(isset($siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->detailCode), 'free text only');
+        $codedDetails = [];
+        foreach ($siteInsightsAccessChecks->getElements() as $siteInsightsAccessCheck) {
+            $codedDetails[$siteInsightsAccessCheck->capability] = [
+                $siteInsightsAccessCheck->detailCode ?? null,
+                isset($siteInsightsAccessCheck->values) ? array_diff_key((array)$siteInsightsAccessCheck->values->toObject(cached: false, forPersistence: false), ['objectType' => true]) : null,
+            ];
+        }
+        self::assertEquals([
+            'keyReadable' => [null, null],
+            'tokenObtained' => [null, null],
+            'propertyListed' => ['propertyListed', ['level' => 'siteRestrictedUser']],
+            'permissionLevel' => ['permissionLevel', ['level' => 'siteRestrictedUser']],
+            'searchAnalytics' => ['rowsRead', ['rows' => 1]],
+            'sitemaps' => ['sitemapsListed', ['files' => 2]],
+            'urlInspection' => ['inspectionVerdict', ['verdict' => 'PASS']],
+            'budgetCountersShared' => ['perPod', null],
+        ], $codedDetails);
+        $serializedInspectionCheck = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->toObject(cached: false, forPersistence: false);
+        self::assertEquals(['verdict' => 'PASS'], array_diff_key((array)$serializedInspectionCheck['values'], ['objectType' => true]), 'only the code\'s field is serialized');
         self::assertSame(5, $capturingNetwork->countSentRequests());
         $sentPaths = array_map(static fn ($sentRequest) => $sentRequest->getMethod() . ' ' . $sentRequest->getUri()->getHost() . $sentRequest->getUri()->getPath(), $capturingNetwork->getSentRequests());
         self::assertSame([
@@ -116,6 +134,10 @@ class SiteInsightsAccessCheckServiceTest extends SiteInsightsTestCase
             'budgetCountersShared' => 'warning',
         ], $causesByCapability);
         self::assertTrue($siteInsightsAccessChecks->hasFailures());
+        $propertyListedCheck = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_PROPERTY_LISTED);
+        self::assertSame(SiteInsightsAccessCheck::DETAIL_CODE_PROPERTY_NOT_LISTED, $propertyListedCheck->detailCode);
+        self::assertSame(count(json_decode(GoogleFixtures::response('sites-list-without-property')->getBody()->__toString(), true)['siteEntry'] ?? []), $propertyListedCheck->values->listedProperties);
+        self::assertFalse(isset($siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_SEARCH_ANALYTICS)->values), 'a provider failure has no values');
         $inspectionDetail = $siteInsightsAccessChecks->findCheck(TestConfig::SITE_KEY, SiteInsightsAccessCheck::CAPABILITY_URL_INSPECTION)->detail;
         self::assertStringNotContainsString('reader@example-project.test', $inspectionDetail);
         self::assertStringContainsString('[e-mail address]', $inspectionDetail);

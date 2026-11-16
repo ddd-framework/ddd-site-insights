@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-rc.9
+
+### Added
+- Access check: `detailCode` and the new typed `values` (`SiteInsightsAccessCheckValues`: `rows`, `files`, `verdict`,
+  `level`, `listedProperties`; only the code's fields set) on every line that words a found value, so a translated
+  host words it itself: `propertyListed` → `propertyListed` `{ level }` or, when the property is not in the sites
+  list, `propertyNotListed` `{ listedProperties }`; `permissionLevel` → `permissionLevel` `{ level }`;
+  `searchAnalytics` → `rowsRead` `{ rows }`; `sitemaps` → `sitemapsListed` `{ files }`; `urlInspection` →
+  `inspectionVerdict` `{ verdict }`. `detail` stays the English sentence; `budgetCountersShared` keeps its codes.
+- npm: type `SiteInsightsAccessCheckValues`.
+
 ## 0.1.0-rc.8
 
 ### Changed
