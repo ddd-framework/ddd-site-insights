@@ -1,6 +1,6 @@
 import { SiteInsightsAccessChecksGetResponseDto } from "../DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsAccessChecksGetResponseDto";
 
-export type GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse =
+export type PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse =
   /** status 200  */ SiteInsightsAccessChecksGetResponseDto;
 
-export default GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse;
+export default PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse;

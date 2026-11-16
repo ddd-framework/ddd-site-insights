@@ -1,7 +1,7 @@
 import { GetAdminSiteInsightsSitesApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesApiResponse";
 import { GetAdminSiteInsightsSitesApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesApiArg";
-import { GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse";
-import { GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg";
+import { PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse } from "./models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse";
+import { PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg } from "./models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg";
 import { codegenBaseApi as api } from "../api/codegenBaseApi";
 import { siteInsightsApiRequests } from "./siteInsightsApiRequests";
 
@@ -13,12 +13,12 @@ const injectedRtkApi = api.injectEndpoints({
     >({
       query: siteInsightsApiRequests.getAdminSiteInsightsSites,
     }),
-    getAdminSiteInsightsSitesAccessChecksBySiteKey: build.query<
-      GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse,
-      GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg
+    postAdminSiteInsightsSitesAccessChecksBySiteKey: build.mutation<
+      PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse,
+      PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg
     >({
       query:
-        siteInsightsApiRequests.getAdminSiteInsightsSitesAccessChecksBySiteKey,
+        siteInsightsApiRequests.postAdminSiteInsightsSitesAccessChecksBySiteKey,
     }),
   }),
   overrideExisting: false,

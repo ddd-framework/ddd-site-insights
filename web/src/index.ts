@@ -30,5 +30,5 @@ export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/D
 export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsAccessChecksGetResponseDto';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesApiArg';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesApiResponse';
-export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg';
-export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse';
+export type * from './generated/models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg';
+export type * from './generated/models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse';

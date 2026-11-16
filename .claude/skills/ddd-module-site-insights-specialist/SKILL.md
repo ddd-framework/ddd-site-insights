@@ -3,7 +3,7 @@ name: ddd-module-site-insights-specialist
 description: "Read Google Search Console data for configured sites with ddd-site-insights: live reads through ddd-argus, cached, nothing stored. Covers install, config/app/SiteInsights (sites, property, credentials entries with an env variable holding the base64 service-account key and a revision, page groups, brand patterns, cache lifetimes, call budgets), the console for agents (app:site-insights:sites, app:site-insights:check-access, --format=json or toon, exit codes), admin endpoints (SiteInsightsSitesControllerTrait), extension points (access policy, sites and credentials providers), reading rules (Pacific Time days, final vs all, retention, comparisons, aggregation, anonymised queries), error causes, the token exchange outside Argus and APCu on the CLI. Use when wiring site insights into an app, configuring a Search Console property or key, a site answers keyUnreadable, tokenRefused, notUserOfProperty or apiNotEnabled, reading search data as an agent, or a console run exchanges a token every time."
 metadata:
   author: mgamadeus
-  version: "0.1.0-rc.1"
+  version: "0.1.0-rc.2"
   module: mgamadeus/ddd-site-insights
 ---
 
@@ -83,11 +83,15 @@ payload. JSON equals the payload of the matching admin endpoint.
 #[Tag(group: 'Website', name: 'SiteInsights', description: 'Search Console insights')]
 class AdminSiteInsightsSitesController extends AdminController
 {
-    use SiteInsightsSitesControllerTrait;   // GET /sites, GET /sites/{siteKey}/accessChecks
+    use SiteInsightsSitesControllerTrait;   // GET /sites, POST /sites/{siteKey}/accessChecks
 }
 ```
 
 ## Extension points (register a subclass under the module's class id)
+
+The module fetches each extension point by its class id from the container. The application's subclass must therefore
+live in a namespace the application registers as a public `…\Services\` resource (or be declared `public: true`);
+otherwise the fetch fails at run time with "service or alias has been removed or inlined".
 
 | Service | Default |
 |---|---|
@@ -114,6 +118,15 @@ class AdminSiteInsightsSitesController extends AdminController
 `quotaExceeded` (retryable), `budgetRefused` (the module's own budget, 429), `invalidRequest` (400),
 `providerFailed` (5xx, retryable), `transport` (rejected call), `answerUnreadable` (answer too large, stalled or
 incomplete: the batch is asked again part by part), `outsideRetention`.
+
+## Call counters: shared or per pod
+
+`check-access` reports `budgetCountersShared` as `shared` (Redis) or `perPod` (APCu). The counters use Core's cache
+group `REDIS_SENTINEL`: they are shared across pods only when the application configures that group, i.e.
+`CACHE_REDIS_SENTINEL_CACHE_GROUP=redisSentinel` (with `CACHE_REDIS_SENTINEL_SENTINELS`, `…_PASSWORD`, `…_NAMESPACE`)
+or `CACHE_REDIS_SENTINEL_CACHE_GROUP=redis` (with `CACHE_REDIS_SENTINEL_HOST`, `…_PORT`, `…_PASSWORD`, `…_DATABASE`).
+Without it Core falls back to APCu: every pod counts on its own, so N pods may use up to N times a quota. Configure it
+before production; Argus's `CACHELEVEL_DB` entries use the same group.
 
 ## Token cache and APCu on the console
 

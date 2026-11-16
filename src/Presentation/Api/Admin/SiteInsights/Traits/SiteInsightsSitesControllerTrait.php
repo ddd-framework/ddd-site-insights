@@ -16,6 +16,7 @@ use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSiteGetRequestDto;
 use DDD\Presentation\Api\Admin\SiteInsights\Dtos\SiteInsightsSitesGetResponseDto;
 use DDD\Presentation\Base\OpenApi\Attributes\Summary;
 use DDD\Presentation\Base\Router\Routes\Get;
+use DDD\Presentation\Base\Router\Routes\Post;
 
 /**
  * The sites endpoints of an admin API: the configured sites, and the live capability check of one site. An
@@ -55,7 +56,8 @@ trait SiteInsightsSitesControllerTrait
     /**
      * Checks every capability of the site against the provider, live: key, token, property, permission level,
      * Search Analytics, sitemaps, URL inspection (one inspection is counted) and whether the call counters are shared.
-     * States only, never a secret.
+     * States only, never a secret. A POST: each call asks the provider live and counts one URL inspection against the
+     * site's daily quota, so a client must never refetch it on its own (as it would refetch a GET).
      *
      * @param SiteInsightsSiteGetRequestDto $requestDto
      * @param InsightsSitesService $insightsSitesService
@@ -67,7 +69,7 @@ trait SiteInsightsSitesControllerTrait
      * @throws BadRequestException
      * @throws SiteInsightsBudgetExceededException
      */
-    #[Get('/sites/{siteKey}/accessChecks')]
+    #[Post('/sites/{siteKey}/accessChecks')]
     #[Summary('SiteInsights Site Access Checks')]
     public function getSiteInsightsAccessChecks(
         SiteInsightsSiteGetRequestDto $requestDto,

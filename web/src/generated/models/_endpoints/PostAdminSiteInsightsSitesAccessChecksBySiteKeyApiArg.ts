@@ -1,4 +1,4 @@
-export type GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg = {
+export type PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg = {
   /** Key of the site (config SiteInsights.sites) */
   siteKey: string;
   /** Common request parameter — see "Shared request parameters". */
@@ -7,4 +7,4 @@ export type GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg = {
   outputFormat?: string;
 };
 
-export default GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg;
+export default PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg;

@@ -1,14 +1,15 @@
 import type { FetchArgs } from "@reduxjs/toolkit/query";
-import { GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg";
+import { PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg } from "./models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg";
 
 export const siteInsightsApiRequests = {
   getAdminSiteInsightsSites: (): string | FetchArgs => ({
     url: `/api/admin/siteInsights/sites`,
   }),
-  getAdminSiteInsightsSitesAccessChecksBySiteKey: (
-    queryArg: GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg,
+  postAdminSiteInsightsSitesAccessChecksBySiteKey: (
+    queryArg: PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg,
   ): string | FetchArgs => ({
     url: `/api/admin/siteInsights/sites/${encodeURIComponent(String(queryArg.siteKey))}/accessChecks`,
+    method: "POST",
     params: {
       noCache: queryArg.noCache,
       outputFormat: queryArg.outputFormat,

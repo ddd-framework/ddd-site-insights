@@ -3,7 +3,7 @@ import {
   buildWindowLabel,
   computePresetWindow,
   DEFAULT_WINDOW_PRESET,
-  type GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg,
+  type PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg,
   type GetAdminSiteInsightsSitesApiResponse,
   type InsightsSite,
   type SiteInsightsAccessCheck,
@@ -22,5 +22,5 @@ export const site: InsightsSite = {
   capabilities: { dayTimeZone: 'America/Los_Angeles', retentionMonths: 16 },
 };
 export const check: SiteInsightsAccessCheck = { siteKey: 'example-site', capability: 'searchAnalytics', state: 'ok' };
-export const accessChecksArg: GetAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg = { siteKey: 'example-site' };
+export const accessChecksArg: PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg = { siteKey: 'example-site' };
 export const sitesResponse: GetAdminSiteInsightsSitesApiResponse = { insightsSites: { elements: [site] } };

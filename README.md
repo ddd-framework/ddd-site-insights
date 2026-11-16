@@ -50,7 +50,7 @@ php bin/console app:site-insights:check-access example-site
 ```
 
 Admin API: mount `SiteInsightsSitesControllerTrait` in a controller of the application (`GET /sites`,
-`GET /sites/{siteKey}/accessChecks`). Who may read is decided by `SiteInsightsAccessPolicyService` (default: admin
+`POST /sites/{siteKey}/accessChecks`). Who may read is decided by `SiteInsightsAccessPolicyService` (default: admin
 accounts); an application registers its own subclass under that service id.
 
 ## Security

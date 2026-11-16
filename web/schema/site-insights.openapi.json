@@ -30,9 +30,9 @@
             }
         },
         "/api/admin/siteInsights/sites/{siteKey}/accessChecks": {
-            "get": {
+            "post": {
                 "summary": "SiteInsights Site Access Checks",
-                "description": "Checks every capability of the site against the provider, live: key, token, property, permission level,\nSearch Analytics, sitemaps, URL inspection (one inspection is counted) and whether the call counters are shared.\nStates only, never a secret.",
+                "description": "Checks every capability of the site against the provider, live: key, token, property, permission level,\nSearch Analytics, sitemaps, URL inspection (one inspection is counted) and whether the call counters are shared.\nStates only, never a secret. A POST: each call asks the provider live and counts one URL inspection against the\nsite's daily quota, so a client must never refetch it on its own (as it would refetch a GET).",
                 "parameters": [
                     {
                         "name": "siteKey",

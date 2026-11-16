@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-rc.2
+
+### Changed
+- The access check is `POST /sites/{siteKey}/accessChecks` (was `GET`): each call asks the provider live and counts one
+  URL inspection, so a client must not refetch it on its own. Generated type names follow
+  (`PostAdminSiteInsightsSitesAccessChecksBySiteKey…`).
+
+### Documentation
+- Skill: an extension-point subclass must live in a public `…\Services\` resource of the application; which cache
+  variables make the call counters `shared` across pods.
+
 ## 0.1.0-rc.1
 
 First pre-release: module core.
