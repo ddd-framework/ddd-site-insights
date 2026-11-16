@@ -30,6 +30,9 @@ class SearchOpportunityThresholds extends ValueObject
     /** @var int|null Fewest rows per position bucket (weakClickRateForPosition) */
     public ?int $minRowsPerBucket;
 
+    /** @var float|null Lowest baseline click rate that judges a row (weakClickRateForPosition) */
+    public ?float $minBaselineClickRate;
+
     /** @var float|null Share of the bucket's click rate below which a row is a hit (weakClickRateForPosition) */
     public ?float $ratio;
 

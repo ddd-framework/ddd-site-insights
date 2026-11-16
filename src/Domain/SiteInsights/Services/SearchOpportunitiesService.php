@@ -65,7 +65,7 @@ class SearchOpportunitiesService extends SearchPerformanceService
     /** @var string[] What a result of each kind does not prove, by kind */
     public const array NOTES_BY_KIND = [
         SearchOpportunity::KIND_STRIKING_DISTANCE_QUERY => 'An average position over the window; it does not say which page ranks or how hard the queries ahead are.',
-        SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION => 'An average position does not prove an expected click rate: features on the result page, intent and brand change it.',
+        SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION => 'Ordered by missing clicks (impressions × (baseline − click rate)). An average position does not prove an expected click rate: features on the result page, intent and brand change it.',
         SearchOpportunity::KIND_SEVERAL_PAGES_FOR_QUERY => 'Two pages shown for one query are not proven competition; the provider drops rows in query × page reports.',
         SearchOpportunity::KIND_RISING_QUERY => 'A change between two periods, not its cause; seasonality and anonymised queries are not taken into account.',
         SearchOpportunity::KIND_DECLINING_QUERY => 'A change between two periods, not its cause; seasonality and anonymised queries are not taken into account.',
@@ -226,9 +226,11 @@ class SearchOpportunitiesService extends SearchPerformanceService
 
     /**
      * Rule 2: query × device rows with impressions ≥ minImpressions (scaled), brand queries left out, judged against
-     * the click rate (Σ clicks ÷ Σ impressions) of their position bucket on their device; a device bucket below
-     * minRowsPerBucket takes the bucket of all devices when fallbackToAllDevices is on. A hit: click rate < ratio ×
-     * the baseline. Ordered by impressions. Every bucket is returned with its row count (`positionBuckets`).
+     * the click rate (Σ clicks ÷ Σ impressions) of the OTHER rows of their position bucket on their device
+     * (leave-one-out); with fewer than minRowsPerBucket other rows or a click rate below minBaselineClickRate the
+     * all-devices bucket is taken (fallbackToAllDevices), else the row is not judged. A hit: click rate < ratio × the
+     * baseline. Ordered by missing clicks = impressions × (baseline − click rate). Every bucket is returned with its
+     * row count and, without a baseline, why (`positionBuckets`).
      *
      * @param SearchOpportunitiesEvaluation $searchOpportunitiesEvaluation
      * @param SearchOpportunityKindResult $searchOpportunityKindResult
@@ -267,8 +269,10 @@ class SearchOpportunitiesService extends SearchPerformanceService
             }
             $judgedRowsWithBucket[] = [$queryDeviceRow, $bucketIndex];
         }
+        $minRowsPerBucket = max(1, $weakClickRateConfig->minRowsPerBucket);
         $searchPositionBuckets = new SearchPositionBuckets();
         $anyBucketHasBaseline = false;
+        $anyBucketBelowMinClickRate = false;
         foreach ([...self::DEVICES, SearchPositionBucket::DEVICE_ALL] as $bucketDevice) {
             for ($bucketIndex = 0; $bucketIndex < count(self::POSITION_BUCKET_BOUNDS) - 1; $bucketIndex++) {
                 $bucketKey = $bucketDevice . '|' . $bucketIndex;
@@ -280,9 +284,17 @@ class SearchOpportunitiesService extends SearchPerformanceService
                 if (($impressionsByDeviceAndBucket[$bucketKey] ?? 0) > 0) {
                     $searchPositionBucket->clickRate = $clicksByDeviceAndBucket[$bucketKey] / $impressionsByDeviceAndBucket[$bucketKey];
                 }
-                $searchPositionBucket->hasBaseline = $searchPositionBucket->rowCount >= max(1, $weakClickRateConfig->minRowsPerBucket);
-                if ($searchPositionBucket->hasBaseline && ($bucketDevice !== SearchPositionBucket::DEVICE_ALL || $weakClickRateConfig->fallbackToAllDevices)) {
-                    $anyBucketHasBaseline = true;
+                if ($searchPositionBucket->rowCount < $minRowsPerBucket) {
+                    $searchPositionBucket->noBaselineReason = SearchPositionBucket::NO_BASELINE_TOO_FEW_ROWS;
+                } elseif (($searchPositionBucket->clickRate ?? 0.0) < $weakClickRateConfig->minBaselineClickRate) {
+                    $searchPositionBucket->noBaselineReason = SearchPositionBucket::NO_BASELINE_BELOW_MIN_BASELINE_CLICK_RATE;
+                } else {
+                    $searchPositionBucket->hasBaseline = true;
+                }
+                if ($bucketDevice !== SearchPositionBucket::DEVICE_ALL || $weakClickRateConfig->fallbackToAllDevices) {
+                    $anyBucketHasBaseline = $anyBucketHasBaseline || $searchPositionBucket->hasBaseline;
+                    $anyBucketBelowMinClickRate = $anyBucketBelowMinClickRate
+                        || ($searchPositionBucket->noBaselineReason ?? null) === SearchPositionBucket::NO_BASELINE_BELOW_MIN_BASELINE_CLICK_RATE;
                 }
                 $searchPositionBuckets->add($searchPositionBucket);
             }
@@ -293,42 +305,53 @@ class SearchOpportunitiesService extends SearchPerformanceService
             return $kindOpportunities;
         }
         if (!$anyBucketHasBaseline) {
-            $searchOpportunityKindResult->emptyReason = SearchOpportunityKindResult::EMPTY_THIN_BASELINE;
+            $searchOpportunityKindResult->emptyReason = $anyBucketBelowMinClickRate
+                ? SearchOpportunityKindResult::EMPTY_BASELINE_BELOW_MIN_CLICK_RATE
+                : SearchOpportunityKindResult::EMPTY_THIN_BASELINE;
             return $kindOpportunities;
         }
         $hitRowsWithBaseline = [];
         foreach ($judgedRowsWithBucket as [$queryDeviceRow, $bucketIndex]) {
             $positionFrom = (float)self::POSITION_BUCKET_BOUNDS[$bucketIndex];
-            $baselineBucket = $searchPositionBuckets->findBucket((string)($queryDeviceRow->device ?? ''), $positionFrom);
-            $baselineScope = SearchClickRateBaseline::SCOPE_DEVICE;
-            if ($baselineBucket === null || !$baselineBucket->hasBaseline) {
-                if (!$weakClickRateConfig->fallbackToAllDevices) {
-                    continue;
-                }
-                $baselineBucket = $searchPositionBuckets->findBucket(SearchPositionBucket::DEVICE_ALL, $positionFrom);
-                $baselineScope = SearchClickRateBaseline::SCOPE_ALL_DEVICES;
-                if ($baselineBucket === null || !$baselineBucket->hasBaseline) {
-                    continue;
-                }
+            $baselineScopes = [SearchClickRateBaseline::SCOPE_DEVICE => (string)($queryDeviceRow->device ?? '')];
+            if ($weakClickRateConfig->fallbackToAllDevices) {
+                $baselineScopes[SearchClickRateBaseline::SCOPE_ALL_DEVICES] = SearchPositionBucket::DEVICE_ALL;
             }
-            $baselineClickRate = $baselineBucket->clickRate ?? 0.0;
-            if ($baselineClickRate <= 0.0 || $queryDeviceRow->metrics->ctr >= $weakClickRateConfig->ratio * $baselineClickRate) {
+            $searchClickRateBaseline = null;
+            foreach ($baselineScopes as $baselineScope => $bucketDevice) {
+                // leave-one-out: the bucket without the row itself, so a large row never lowers its own baseline
+                $bucketKey = $bucketDevice . '|' . $bucketIndex;
+                $otherRowCount = ($rowCountsByDeviceAndBucket[$bucketKey] ?? 0) - 1;
+                $otherImpressions = ($impressionsByDeviceAndBucket[$bucketKey] ?? 0) - $queryDeviceRow->metrics->impressions;
+                if ($otherRowCount < $minRowsPerBucket || $otherImpressions <= 0) {
+                    continue;
+                }
+                $otherClickRate = (($clicksByDeviceAndBucket[$bucketKey] ?? 0) - $queryDeviceRow->metrics->clicks) / $otherImpressions;
+                if ($otherClickRate < $weakClickRateConfig->minBaselineClickRate) {
+                    continue;
+                }
+                $searchClickRateBaseline = new SearchClickRateBaseline();
+                $searchClickRateBaseline->positionFrom = $positionFrom;
+                $searchClickRateBaseline->positionTo = (float)self::POSITION_BUCKET_BOUNDS[$bucketIndex + 1];
+                $searchClickRateBaseline->baselineScope = $baselineScope;
+                $searchClickRateBaseline->clickRate = $otherClickRate;
+                $searchClickRateBaseline->rowCount = $otherRowCount;
+                $searchClickRateBaseline->ratio = $weakClickRateConfig->ratio;
+                break;
+            }
+            if ($searchClickRateBaseline === null || $queryDeviceRow->metrics->ctr >= $weakClickRateConfig->ratio * $searchClickRateBaseline->clickRate) {
                 continue;
             }
-            $searchClickRateBaseline = new SearchClickRateBaseline();
-            $searchClickRateBaseline->positionFrom = $baselineBucket->positionFrom;
-            $searchClickRateBaseline->positionTo = $baselineBucket->positionTo;
-            $searchClickRateBaseline->baselineScope = $baselineScope;
-            $searchClickRateBaseline->clickRate = $baselineClickRate;
-            $searchClickRateBaseline->rowCount = $baselineBucket->rowCount;
-            $searchClickRateBaseline->ratio = $weakClickRateConfig->ratio;
-            $hitRowsWithBaseline[] = [$queryDeviceRow, $searchClickRateBaseline];
+            $missingClicks = $queryDeviceRow->metrics->impressions * ($searchClickRateBaseline->clickRate - $queryDeviceRow->metrics->ctr);
+            $hitRowsWithBaseline[] = [$queryDeviceRow, $searchClickRateBaseline, $missingClicks];
         }
-        usort($hitRowsWithBaseline, static fn (array $firstHit, array $secondHit): int => $secondHit[0]->metrics->impressions <=> $firstHit[0]->metrics->impressions);
-        foreach (array_slice($hitRowsWithBaseline, 0, max(0, $weakClickRateConfig->maxResults)) as [$hitRow, $searchClickRateBaseline]) {
+        // the clicks a row misses against its baseline: a few clicks short on many impressions before none on few
+        usort($hitRowsWithBaseline, static fn (array $firstHit, array $secondHit): int => $secondHit[2] <=> $firstHit[2]);
+        foreach (array_slice($hitRowsWithBaseline, 0, max(0, $weakClickRateConfig->maxResults)) as [$hitRow, $searchClickRateBaseline, $missingClicks]) {
             $searchOpportunity = $this->createOpportunity(SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION, SearchOpportunity::SUBJECT_QUERY, $hitRow, $this->createRowSet(['query', 'device'], $hitRow));
             $searchOpportunity->device = (string)($hitRow->device ?? '');
             $searchOpportunity->baseline = $searchClickRateBaseline;
+            $searchOpportunity->missingClicks = round($missingClicks, 2);
             $kindOpportunities->add($searchOpportunity);
         }
         return $kindOpportunities;
@@ -1046,6 +1069,7 @@ class SearchOpportunitiesService extends SearchPerformanceService
                 $weakClickRateConfig = $opportunitiesConfig->weakClickRateForPosition;
                 $searchOpportunityThresholds->minImpressions = SiteInsightsOpportunityRuleConfig::scaleToWindow($weakClickRateConfig->minImpressions, $windowDays);
                 $searchOpportunityThresholds->minRowsPerBucket = $weakClickRateConfig->minRowsPerBucket;
+                $searchOpportunityThresholds->minBaselineClickRate = $weakClickRateConfig->minBaselineClickRate;
                 $searchOpportunityThresholds->ratio = $weakClickRateConfig->ratio;
                 $searchOpportunityThresholds->excludeBrand = $weakClickRateConfig->excludeBrand;
                 $searchOpportunityThresholds->fallbackToAllDevices = $weakClickRateConfig->fallbackToAllDevices;

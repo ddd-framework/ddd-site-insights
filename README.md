@@ -5,7 +5,7 @@ knows about your websites, readable in the admin and by agents. The module reads
 [`mgamadeus/ddd-argus`](https://github.com/ddd-framework/ddd-argus), caches the answers, stores nothing, and states in
 every answer what it covers (which days, which data state, how many rows of how many, how aggregated).
 
-Status: `0.1.0-rc.5` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
+Status: `0.1.0-rc.6` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
 coverage model, access checks), search performance (overview, lists with comparison counterparts, page groups,
 page and query detail, export), indexing (sitemap states, URL inspection) and opportunities (fixed rules that return
 candidates with their evidence).
@@ -29,6 +29,8 @@ Files under `config/app/SiteInsights/` of the application replace the module's f
   line) and a revision; the read-only scope.
 - `cache.php`, `budgets.php`, `opportunities.php` — lifetimes, call budgets and limits, rule thresholds (per 28 days,
   scaled to the window). A site entry may override single thresholds with its own `opportunities` setting.
+  The weak-click-rate rule judges a row against the other rows of its position bucket (never a baseline below
+  `minBaselineClickRate`, 0.5 %) and ranks hits by missing clicks.
 
 ```php
 // config/app/SiteInsights/credentials.php

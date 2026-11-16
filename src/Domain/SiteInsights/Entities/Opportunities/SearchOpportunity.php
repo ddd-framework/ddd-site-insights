@@ -62,6 +62,9 @@ class SearchOpportunity extends ValueObject
     /** @var SearchClickRateBaseline|null The baseline the click rate was judged against (weakClickRateForPosition) */
     public ?SearchClickRateBaseline $baseline;
 
+    /** @var float|null impressions × (baseline − click rate): the clicks the row misses against its baseline; the order of weakClickRateForPosition */
+    public ?float $missingClicks;
+
     /** @var SearchPerformanceRows The rows the result is based on (window and coverage: see the kind result) */
     public SearchPerformanceRows $evidenceRows;
 

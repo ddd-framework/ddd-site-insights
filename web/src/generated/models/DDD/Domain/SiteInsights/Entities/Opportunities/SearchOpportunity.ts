@@ -17,6 +17,8 @@ export type SearchOpportunity = {
   metrics?: SearchMetrics;
   comparison?: SearchMetricsComparison;
   baseline?: SearchClickRateBaseline;
+  /** impressions × (baseline − click rate): the clicks the row misses against its baseline; the order of weakClickRateForPosition */
+  missingClicks?: number | null;
   evidenceRows?: SearchPerformanceRows;
   /** The fully qualified class name of the object */
   objectType?: string | null;

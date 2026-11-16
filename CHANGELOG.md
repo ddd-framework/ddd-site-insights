@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.0-rc.6
+
+Rule `weakClickRateForPosition` judges against a usable baseline and ranks by missing clicks.
+
+### Changed
+- A row is judged against its position bucket without itself (leave-one-out: (Σ clicks − its clicks) ÷
+  (Σ impressions − its impressions)); a bucket with fewer than `minRowsPerBucket` other rows has no baseline for that
+  row. `baseline.clickRate` and `baseline.rowCount` describe the other rows.
+- New setting `minBaselineClickRate` (default 0.005 = 0.5 %, overridable per site): a baseline below it judges no row.
+  `positionBuckets` say why a bucket has none (`noBaselineReason` `tooFewRows` or `belowMinBaselineClickRate`); when no
+  bucket has a usable baseline, the kind is empty with `emptyReason` `baselineBelowMinClickRate` (not `thinBaseline`).
+- Hits are ordered by missing clicks, impressions × (baseline − click rate), descending; each carries `missingClicks`.
+  Before, they were ordered by impressions, so the zero-click rows that lowered a baseline led the list.
+
 ## 0.1.0-rc.5
 
 Opportunities.

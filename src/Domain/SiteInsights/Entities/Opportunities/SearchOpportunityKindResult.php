@@ -17,6 +17,7 @@ class SearchOpportunityKindResult extends ValueObject
     public const string EMPTY_WINDOW_TOO_SHORT = 'windowTooShort';
     public const string EMPTY_NO_COMPARISON = 'noComparison';
     public const string EMPTY_THIN_BASELINE = 'thinBaseline';
+    public const string EMPTY_BASELINE_BELOW_MIN_CLICK_RATE = 'baselineBelowMinClickRate';
     public const string EMPTY_SOURCE_FAILED = 'sourceFailed';
 
     /** @var string The kind */
@@ -25,7 +26,7 @@ class SearchOpportunityKindResult extends ValueObject
     /** @var int Results of the kind in `elements` of the set */
     public int $resultCount = 0;
 
-    /** @var string|null Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, sourceFailed */
+    /** @var string|null Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, baselineBelowMinClickRate, sourceFailed */
     public ?string $emptyReason;
 
     /** @var SearchPartError|null Why the kind (or a part of its source) failed; budgetRefused when the operation's call budget did not reach it */

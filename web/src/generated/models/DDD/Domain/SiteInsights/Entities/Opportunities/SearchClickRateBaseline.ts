@@ -5,9 +5,9 @@ export type SearchClickRateBaseline = {
   positionTo?: number;
   /** device or allDevices */
   baselineScope?: string;
-  /** Σ clicks ÷ Σ impressions of the bucket's rows */
+  /** Σ clicks ÷ Σ impressions of the bucket's other rows */
   clickRate?: number;
-  /** Rows the baseline is computed from */
+  /** Other rows of the bucket the baseline is computed from */
   rowCount?: number;
   /** The row's click rate must be below ratio × clickRate */
   ratio?: number;

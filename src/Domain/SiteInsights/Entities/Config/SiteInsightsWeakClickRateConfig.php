@@ -15,6 +15,13 @@ class SiteInsightsWeakClickRateConfig extends SiteInsightsOpportunityRuleConfig
     /** @var int Fewest rows a bucket needs for its baseline */
     public int $minRowsPerBucket = 5;
 
+    /**
+     * @var float Lowest click rate a baseline may have: a bucket below it (zero-click rows dominate it) judges no row.
+     *      Default 0.005 (0.5 %): organic results on positions 1 to 10 are clicked well above that, so a lower
+     *      baseline says more about the rows that pull it down than about the position
+     */
+    public float $minBaselineClickRate = 0.005;
+
     /** @var float A row is a hit below this share of its bucket's click rate */
     public float $ratio = 0.5;
 

@@ -19,6 +19,8 @@ return [
     'weakClickRateForPosition' => [
         'minImpressions' => 50,
         'minRowsPerBucket' => 5,
+        // a baseline below 0.5 % click rate (zero-click rows dominate the bucket) judges no row
+        'minBaselineClickRate' => 0.005,
         'ratio' => 0.5,
         'excludeBrand' => true,
         // a device bucket below minRowsPerBucket takes the baseline of all devices (the result says so: baselineScope)

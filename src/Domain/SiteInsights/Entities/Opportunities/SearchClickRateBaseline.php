@@ -6,7 +6,10 @@ namespace DDD\Domain\SiteInsights\Entities\Opportunities;
 
 use DDD\Domain\Base\Entities\ValueObject;
 
-/** The click rate of a position bucket a row of weakClickRateForPosition was judged against */
+/**
+ * The click rate a row of weakClickRateForPosition was judged against: its position bucket without the row itself
+ * (leave-one-out), so a large row never lowers its own baseline.
+ */
 class SearchClickRateBaseline extends ValueObject
 {
     /** The baseline of the row's own device */
@@ -24,10 +27,10 @@ class SearchClickRateBaseline extends ValueObject
     /** @var string device or allDevices */
     public string $baselineScope;
 
-    /** @var float Σ clicks ÷ Σ impressions of the bucket's rows */
+    /** @var float Σ clicks ÷ Σ impressions of the bucket's other rows */
     public float $clickRate;
 
-    /** @var int Rows the baseline is computed from */
+    /** @var int Other rows of the bucket the baseline is computed from */
     public int $rowCount;
 
     /** @var float The row's click rate must be below ratio × clickRate */

@@ -3245,7 +3245,7 @@
                     "emptyReason": {
                         "type": "string",
                         "nullable": true,
-                        "description": "Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, sourceFailed"
+                        "description": "Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, baselineBelowMinClickRate, sourceFailed"
                     },
                     "error": {
                         "nullable": true,
@@ -3318,6 +3318,11 @@
                         "type": "integer",
                         "nullable": true,
                         "description": "Fewest rows per position bucket (weakClickRateForPosition)"
+                    },
+                    "minBaselineClickRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Lowest baseline click rate that judges a row (weakClickRateForPosition)"
                     },
                     "ratio": {
                         "type": "number",
@@ -3426,7 +3431,12 @@
                     "hasBaseline": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Whether the bucket has at least minRowsPerBucket rows (a baseline of its own)"
+                        "description": "Whether the bucket can judge rows: at least minRowsPerBucket rows and a click rate of at least\nminBaselineClickRate (each row is then judged against the bucket without its own row)"
+                    },
+                    "noBaselineReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Why the bucket has no baseline: tooFewRows or belowMinBaselineClickRate"
                     },
                     "objectType": {
                         "type": "string",
@@ -3472,6 +3482,11 @@
                         "nullable": true,
                         "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Opportunities.SearchClickRateBaseline"
                     },
+                    "missingClicks": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "impressions × (baseline − click rate): the clicks the row misses against its baseline; the order of weakClickRateForPosition"
+                    },
                     "evidenceRows": {
                         "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
                     },
@@ -3499,11 +3514,11 @@
                     },
                     "clickRate": {
                         "type": "number",
-                        "description": "Σ clicks ÷ Σ impressions of the bucket's rows"
+                        "description": "Σ clicks ÷ Σ impressions of the bucket's other rows"
                     },
                     "rowCount": {
                         "type": "integer",
-                        "description": "Rows the baseline is computed from"
+                        "description": "Other rows of the bucket the baseline is computed from"
                     },
                     "ratio": {
                         "type": "number",

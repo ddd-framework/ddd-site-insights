@@ -21,6 +21,7 @@ use DDD\Infrastructure\Exceptions\InternalErrorException;
 use DDD\Infrastructure\Services\AuthService;
 use DDD\Infrastructure\Services\DDDService;
 use DDD\Tests\SiteInsights\Support\AnsweringNetwork;
+use DDD\Tests\SiteInsights\Support\InMemoryCache;
 use DDD\Tests\SiteInsights\Support\SiteInsightsTestCase;
 use DDD\Tests\SiteInsights\Support\SyntheticOpportunityAnalytics;
 use DDD\Tests\SiteInsights\Support\TestAccounts;
@@ -95,8 +96,8 @@ class SearchOpportunitiesServiceTest extends SiteInsightsTestCase
         for ($rowIndex = 0; $rowIndex < 5; $rowIndex++) {
             $queryDeviceRows[] = [['mobile query ' . $rowIndex, 'MOBILE'], 30, 100, 1.4];
         }
-        $queryDeviceRows[] = [['weak mobile query', 'MOBILE'], 5, 100, 1.6];      // 5 % against a 25.8 % baseline
-        $queryDeviceRows[] = [['near mobile query', 'MOBILE'], 13, 100, 1.2];     // 13 % ≥ half of 25.8 %
+        $queryDeviceRows[] = [['weak mobile query', 'MOBILE'], 5, 100, 1.6];      // 5 % against the other rows' 27.2 %
+        $queryDeviceRows[] = [['near mobile query', 'MOBILE'], 13, 100, 1.2];     // 13 % ≥ half of the other rows' 25.8 %
         $queryDeviceRows[] = [['weak desktop query', 'DESKTOP'], 2, 100, 1.5];    // the desktop bucket has 2 rows
         $queryDeviceRows[] = [['desktop query', 'DESKTOP'], 30, 100, 1.0];
         $queryDeviceRows[] = [['tiny mobile query', 'MOBILE'], 0, 49, 1.0];       // below minImpressions
@@ -106,21 +107,25 @@ class SearchOpportunitiesServiceTest extends SiteInsightsTestCase
 
         $searchOpportunities = $this->getOpportunities(SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION);
 
-        self::assertSame(['weak mobile query', 'weak desktop query'], $this->findSubjects($searchOpportunities));
-        [$mobileHit, $desktopHit] = array_values($searchOpportunities->getElements());
+        self::assertSame(['weak desktop query', 'weak mobile query'], $this->findSubjects($searchOpportunities), 'ordered by missing clicks');
+        [$desktopHit, $mobileHit] = array_values($searchOpportunities->getElements());
         self::assertSame('mobile', $mobileHit->device);
         self::assertSame(SearchClickRateBaseline::SCOPE_DEVICE, $mobileHit->baseline->baselineScope);
-        self::assertSame(7, $mobileHit->baseline->rowCount);
-        self::assertEqualsWithDelta(168 / 700, $mobileHit->baseline->clickRate, 0.0001);
+        self::assertSame(6, $mobileHit->baseline->rowCount, 'the bucket without the row itself');
+        self::assertEqualsWithDelta(163 / 600, $mobileHit->baseline->clickRate, 0.0001);
+        self::assertEqualsWithDelta(100 * (163 / 600 - 0.05), $mobileHit->missingClicks, 0.01);
         self::assertSame(SearchClickRateBaseline::SCOPE_ALL_DEVICES, $desktopHit->baseline->baselineScope);
-        self::assertSame(9, $desktopHit->baseline->rowCount);
+        self::assertSame(8, $desktopHit->baseline->rowCount);
+        self::assertEqualsWithDelta(100 * (198 / 800 - 0.02), $desktopHit->missingClicks, 0.01);
         $kindResult = $searchOpportunities->kinds->first();
         self::assertSame(50, $kindResult->thresholds->minImpressions);
         self::assertSame(5, $kindResult->thresholds->minRowsPerBucket);
+        self::assertSame(0.005, $kindResult->thresholds->minBaselineClickRate);
         self::assertTrue($kindResult->thresholds->fallbackToAllDevices);
         $desktopBucket = $kindResult->positionBuckets->findBucket('desktop', 1.0);
         self::assertSame(2, $desktopBucket->rowCount);
         self::assertFalse($desktopBucket->hasBaseline);
+        self::assertSame(SearchPositionBucket::NO_BASELINE_TOO_FEW_ROWS, $desktopBucket->noBaselineReason);
         self::assertTrue($kindResult->positionBuckets->findBucket(SearchPositionBucket::DEVICE_ALL, 1.0)->hasBaseline);
         self::assertCount(4 * 5, $kindResult->positionBuckets->getElements(), 'three devices and all, five buckets each');
     }
@@ -133,6 +138,7 @@ class SearchOpportunitiesServiceTest extends SiteInsightsTestCase
         $this->syntheticOpportunityAnalytics->setRows(self::WINDOW, ['query', 'device'], [
             [['desktop one', 'DESKTOP'], 30, 100, 1.0],
             [['desktop two', 'DESKTOP'], 30, 100, 1.0],
+            [['desktop three', 'DESKTOP'], 30, 100, 1.0],
             [['weak desktop', 'DESKTOP'], 1, 100, 1.0],
             [['weak mobile', 'MOBILE'], 1, 100, 1.0],
             [['mobile one', 'MOBILE'], 30, 100, 1.0],
@@ -149,10 +155,61 @@ class SearchOpportunitiesServiceTest extends SiteInsightsTestCase
         $thinKindResult = $thinOpportunities->kinds->first();
         self::assertSame(SearchOpportunityKindResult::EMPTY_THIN_BASELINE, $thinKindResult->emptyReason);
         self::assertSame(0, $thinKindResult->resultCount);
-        self::assertSame(3, $thinKindResult->positionBuckets->findBucket('desktop', 1.0)->rowCount);
+        self::assertSame(4, $thinKindResult->positionBuckets->findBucket('desktop', 1.0)->rowCount);
         self::assertSame(2, $thinKindResult->positionBuckets->findBucket('mobile', 1.0)->rowCount);
-        self::assertSame(5, $thinKindResult->positionBuckets->findBucket(SearchPositionBucket::DEVICE_ALL, 1.0)->rowCount);
+        self::assertSame(6, $thinKindResult->positionBuckets->findBucket(SearchPositionBucket::DEVICE_ALL, 1.0)->rowCount);
         self::assertSame(2.0, $thinKindResult->positionBuckets->findBucket('mobile', 1.0)->positionTo);
+    }
+
+    public function testADominantZeroClickRowNeitherLowersItsOwnBaselineNorLeadsTheList(): void
+    {
+        $this->syntheticOpportunityAnalytics->setRows(self::WINDOW, ['query', 'device'], [
+            // [1,2): one large row without clicks pulls the bucket below the lowest usable baseline
+            [['dominant query', 'MOBILE'], 0, 3246, 1.7],
+            [['quiet query 1', 'MOBILE'], 0, 100, 1.2],
+            [['quiet query 2', 'MOBILE'], 1, 100, 1.3],
+            [['quiet query 3', 'MOBILE'], 0, 100, 1.4],
+            [['quiet query 4', 'MOBILE'], 0, 100, 1.5],
+            [['quiet query 5', 'MOBILE'], 0, 100, 1.6],
+            // [2,3): a real baseline of about 1.3 %
+            [['steady query 1', 'MOBILE'], 2, 150, 2.1],
+            [['steady query 2', 'MOBILE'], 2, 150, 2.2],
+            [['steady query 3', 'MOBILE'], 2, 150, 2.3],
+            [['steady query 4', 'MOBILE'], 2, 150, 2.4],
+            [['steady query 5', 'MOBILE'], 2, 150, 2.5],
+            [['steady query 6', 'MOBILE'], 2, 150, 2.6],
+            [['short of clicks query', 'MOBILE'], 4, 800, 2.5],    // 0.5 % against 1.2 %
+            [['no click query', 'MOBILE'], 0, 100, 2.7],           // 0 clicks on few impressions
+        ]);
+
+        $searchOpportunities = $this->getOpportunities(SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION);
+
+        self::assertSame(['short of clicks query', 'no click query'], $this->findSubjects($searchOpportunities), 'ordered by missing clicks; nothing of the dominant bucket');
+        [$shortOfClicksHit, $noClickHit] = array_values($searchOpportunities->getElements());
+        self::assertEqualsWithDelta(12 / 1000, $shortOfClicksHit->baseline->clickRate, 0.00001, 'the other rows of [2,3)');
+        self::assertEqualsWithDelta(800 * (12 / 1000 - 0.005), $shortOfClicksHit->missingClicks, 0.01);
+        self::assertGreaterThan($noClickHit->missingClicks, $shortOfClicksHit->missingClicks);
+        $kindResult = $searchOpportunities->kinds->first();
+        $dominantBucket = $kindResult->positionBuckets->findBucket('mobile', 1.0);
+        self::assertSame(6, $dominantBucket->rowCount);
+        self::assertFalse($dominantBucket->hasBaseline);
+        self::assertSame(SearchPositionBucket::NO_BASELINE_BELOW_MIN_BASELINE_CLICK_RATE, $dominantBucket->noBaselineReason);
+        self::assertTrue($kindResult->positionBuckets->findBucket('mobile', 2.0)->hasBaseline);
+
+        // only the dominant bucket: no usable baseline anywhere, and the answer says why
+        $this->syntheticOpportunityAnalytics->setRows(self::WINDOW, ['query', 'device'], [
+            [['dominant query', 'MOBILE'], 0, 3246, 1.7],
+            [['quiet query 1', 'MOBILE'], 0, 100, 1.2],
+            [['quiet query 2', 'MOBILE'], 1, 100, 1.3],
+            [['quiet query 3', 'MOBILE'], 0, 100, 1.4],
+            [['quiet query 4', 'MOBILE'], 0, 100, 1.5],
+            [['quiet query 5', 'MOBILE'], 0, 100, 1.6],
+        ]);
+        // the same question again: a new answer, not the cached one
+        $this->caches = InMemoryCache::installForCacheGroups();
+        $lowBaselineResult = $this->getOpportunities(SearchOpportunity::KIND_WEAK_CLICK_RATE_FOR_POSITION)->kinds->first();
+        self::assertSame(SearchOpportunityKindResult::EMPTY_BASELINE_BELOW_MIN_CLICK_RATE, $lowBaselineResult->emptyReason);
+        self::assertSame(0, $lowBaselineResult->resultCount);
     }
 
     public function testSeveralPagesForATopQueryAskedInOneFilteredReport(): void

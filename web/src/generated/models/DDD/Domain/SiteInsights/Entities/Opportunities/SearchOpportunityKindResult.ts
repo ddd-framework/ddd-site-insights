@@ -9,7 +9,7 @@ export type SearchOpportunityKindResult = {
   kind?: string;
   /** Results of the kind in `elements` of the set */
   resultCount?: number;
-  /** Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, sourceFailed */
+  /** Why the kind has no result: noRows, belowThresholds, windowTooShort, noComparison, thinBaseline, baselineBelowMinClickRate, sourceFailed */
   emptyReason?: string | null;
   error?: SearchPartError;
   /** Results come from part of the source only (some calls failed, see `error`) */

@@ -11,6 +11,8 @@ export type SearchOpportunityThresholds = {
   excludeBrand?: boolean | null;
   /** Fewest rows per position bucket (weakClickRateForPosition) */
   minRowsPerBucket?: number | null;
+  /** Lowest baseline click rate that judges a row (weakClickRateForPosition) */
+  minBaselineClickRate?: number | null;
   /** Share of the bucket's click rate below which a row is a hit (weakClickRateForPosition) */
   ratio?: number | null;
   /** Whether a thin device bucket takes the baseline of all devices (weakClickRateForPosition) */
