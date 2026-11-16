@@ -15,7 +15,7 @@ opportunities follow.
 composer require mgamadeus/ddd-site-insights
 ```
 
-The module registers itself through `extra.ddd-module`. Requirements: PHP 8.3+, `mgamadeus/ddd ^3.33.1`,
+The module registers itself through `extra.ddd-module`. Requirements: PHP 8.3+, `mgamadeus/ddd ^3.33.2`,
 `mgamadeus/ddd-argus ^1.5.1`.
 
 ## Configure

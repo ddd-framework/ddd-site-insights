@@ -5,7 +5,7 @@ stored, coverage stated in every answer.
 
 **Package:** `mgamadeus/ddd-site-insights` (Composer) and `@mgamadeus/ddd-site-insights` (npm, `web/`), same version
 **Namespace:** `DDD\`
-**Depends on:** `mgamadeus/ddd` (^3.33.1), `mgamadeus/ddd-argus` (^1.5.1)
+**Depends on:** `mgamadeus/ddd` (^3.33.2), `mgamadeus/ddd-argus` (^1.5.1)
 
 > **This module follows all DDD Core conventions** (`vendor/mgamadeus/ddd/AGENTS.md` and its skills) and the Argus
 > skill. Module skill: `.claude/skills/ddd-module-site-insights-specialist/SKILL.md`.

@@ -17,7 +17,7 @@
     ],
     "require": {
         "php": ">=8.3",
-        "mgamadeus/ddd": "^3.33.1",
+        "mgamadeus/ddd": "^3.33.2",
         "mgamadeus/ddd-argus": "^1.5.1"
     },
     "require-dev": {

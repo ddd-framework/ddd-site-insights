@@ -34,7 +34,7 @@ Google Search Console in the admin and for agents: a live reader with honest cov
 composer require mgamadeus/ddd-site-insights
 ```
 
-The module registers itself (`extra.ddd-module`). Requires `mgamadeus/ddd ^3.33.1`, `mgamadeus/ddd-argus ^1.5.1`.
+The module registers itself (`extra.ddd-module`). Requires `mgamadeus/ddd ^3.33.2`, `mgamadeus/ddd-argus ^1.5.1`.
 Link this skill into the application's `.claude/skills/` like the other module skills.
 
 ## Configuration (`config/app/SiteInsights/`, an application file replaces the module file as a whole)
