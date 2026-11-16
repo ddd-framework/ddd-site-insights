@@ -22,7 +22,8 @@ src/
 |   |   +-- Config/           [typed configuration: SiteInsightsBudgetsConfig, …CacheConfig, …CredentialsConfig, site entries]
 |   |   +-- Budgets/          [SiteInsightsBudgetCounter(s)]
 |   |   +-- Errors/           [SiteInsightsErrorCause]
-|   |   +-- Google/           [raw answers in Google's shape: GoogleSearchAnalyticsReport, GoogleSites, GoogleSite, GoogleSitemaps, GoogleUrlInspection, GoogleApiFailure]
+|   |   +-- Google/           [raw answers in Google's shape: GoogleSearchAnalyticsReport, GoogleSites, GoogleSite, GoogleSitemaps, GoogleUrlInspection(s), GoogleApiFailure]
+|   |   +-- Indexing/         [neutral indexing answers: SitemapStatus(es), SitemapContentCount(s), UrlIndexInspection(s), IndexingCoverage]
 |   |   +-- Search/           [neutral reports and coverage: SearchPerformanceRows, SearchWindow, SearchRowsCoverage, SearchQuestion,
 |   |                          SearchPerformanceOverview, SearchTotals, SearchPageDetail, SearchQueryDetail, SearchPageGroupPerformance(s),
 |   |                          SearchListRequest, SearchExportRequest, SearchExportSummary, …]
@@ -30,7 +31,7 @@ src/
 |   +-- Exceptions/           [SiteInsightsProviderUnavailableException (503), SiteInsightsBudgetExceededException (429)]
 |   +-- Repo/Argus/Google/    [Argus repositories of the raw answers]
 |   +-- Services/             [public: config, sites, access policy, credentials, tokens, request builder, source, windows, budgets,
-|   |                          access checks, search performance]
+|   |                          access checks, search performance, search indexing]
 |   +-- Utils/                [SearchDays: day arithmetic on UTC days; SearchRegex: RE2 expressions of counterparts and page groups]
 +-- Presentation/Api/Admin/SiteInsights/ [controller traits and DTOs]
 +-- Symfony/Commands/SiteInsights/       [SiteInsightsCommand and the commands]
@@ -52,7 +53,8 @@ web/                          [npm package: API factory, generated types, window
 - Configuration is read only through `SiteInsightsConfigService`, which returns value objects; no array of settings
   leaves it.
 - Every search answer carries its window, comparison window and coverage (or `error`); a missing counterpart is
-  `notObserved`, never zero. Reads that count against a daily quota are POST, never GET.
+  `notObserved`, never zero. Anything that counts against a daily quota (a URL inspection) is POST, never GET; every
+  indexing answer carries its coverage, every inspected URL its own `error` when it failed.
 - Services are resolved from the container by class id at use, never kept in properties; extension points are
   replaced by registering a subclass under the module's class id.
 - Fixtures are synthetic (`example.test`, invented queries and numbers); the test key is generated at test time.

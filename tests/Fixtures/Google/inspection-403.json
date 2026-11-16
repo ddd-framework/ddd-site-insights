@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": 403,
+    "message": "You do not own this site, or the inspected URL is not part of this property.",
+    "status": "PERMISSION_DENIED",
+    "errors": [
+      {
+        "message": "You do not own this site, or the inspected URL is not part of this property.",
+        "domain": "global",
+        "reason": "forbidden"
+      }
+    ]
+  }
+}

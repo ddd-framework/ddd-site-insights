@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DDD\Domain\SiteInsights\Entities\Search;
 
+use DDD\Infrastructure\Base\DateTime\Date;
+
 /** A report paged to its end: the window, the dimensions, and whether it is asked day by day */
 class SearchExportRequest extends SearchWindowRequest
 {
@@ -15,6 +17,9 @@ class SearchExportRequest extends SearchWindowRequest
 
     /** @var bool|null One window per day; unset: on when query and page are asked together (Google's per-day row limits) */
     public ?bool $byDay;
+
+    /** @var Date|null Continue after this day of the window (the lastFinishedDay of an export that ended early) */
+    public ?Date $resumeAfter;
 
     /** @return bool whether the export asks one window per day */
     public function isAskedByDay(): bool

@@ -187,6 +187,26 @@ class SiteInsightsSearchCommandsTest extends SiteInsightsTestCase
         self::assertSame(Command::FAILURE, $limitedTester->execute(['site' => TestConfig::SITE_KEY, '--from' => '2026-11-12', '--to' => '2026-11-13']), 'stopped before its end');
     }
 
+    public function testExportResumesAfterADayOfTheWindow(): void
+    {
+        $resumedTester = new CommandTester(new SiteInsightsExport());
+        $exitCode = $resumedTester->execute(['site' => TestConfig::SITE_KEY, '--from' => '2026-11-11', '--to' => '2026-11-13', '--dimensions' => 'query,page', '--resumeAfter' => '2026-11-12']);
+
+        self::assertSame(Command::SUCCESS, $exitCode, $resumedTester->getDisplay());
+        $outputLines = explode("\n", trim($resumedTester->getDisplay()));
+        $summary = json_decode(end($outputLines), true)['searchExportSummary'];
+        self::assertSame('2026-11-12', $summary['resumedAfter']);
+        self::assertSame('2026-11-11', $summary['window']['from']);
+        self::assertCount(1, $summary['days']['elements']);
+        self::assertSame('2026-11-13', $summary['days']['elements'][0]['from']);
+        self::assertSame('2026-11-13', $summary['lastFinishedDay']);
+
+        foreach (['2026-11-10', '2026-11-13', 'yesterday'] as $invalidResumeAfter) {
+            $invalidTester = new CommandTester(new SiteInsightsExport());
+            self::assertSame(Command::INVALID, $invalidTester->execute(['site' => TestConfig::SITE_KEY, '--from' => '2026-11-11', '--to' => '2026-11-13', '--resumeAfter' => $invalidResumeAfter]), $invalidResumeAfter);
+        }
+    }
+
     /** fetchedAt is when the provider answered: the two reads are seconds apart */
     protected function withoutAnswerTimes(array $payload): array
     {

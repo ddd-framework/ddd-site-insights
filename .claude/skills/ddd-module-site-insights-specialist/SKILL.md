@@ -1,9 +1,9 @@
 ---
 name: ddd-module-site-insights-specialist
-description: "Read Google Search Console data with ddd-site-insights: live reads through ddd-argus, cached, coverage in every answer. Covers install, config/app/SiteInsights (sites, credentials entry with env variable and revision, page groups, cache, call budgets, typed getters), search performance (overview, lists by query, page, country, device with comparison counterparts, page groups, page and query detail, export), admin endpoints (Sites and Search controller traits), agent commands app:site-insights:sites, check-access, overview, queries, pages, countries, devices, page-groups, page, query, export (--format=json or toon, exit codes), the npm factory createSiteInsightsApi, extension points, reading rules (Pacific Time days, final vs all, partial comparisons, notObserved, sortScope, limitReached, anonymised queries, byPage vs byProperty). Use when wiring site insights into an app, reading search data as an agent, comparing periods, or a site answers keyUnreadable, tokenRefused or notUserOfProperty."
+description: "Search Console data with ddd-site-insights: live reads through ddd-argus, cached, coverage in every answer. Covers install, config/app/SiteInsights (sites, credentials, page groups, cache, budgets incl. URL inspection share), search performance (overview, lists by query, page, country, device with comparison counterparts, page groups, page and query detail, export), indexing (sitemap states, URL inspection of a bounded list, POST only: counts against the daily quota), Sites, Search and Indexing controller traits, commands app:site-insights:sites, check-access, overview, queries, pages, countries, devices, page-groups, page, query, export, sitemaps, inspect (--format=json or toon), npm factory createSiteInsightsApi, extension points, reading rules (Pacific Time days, final vs all, notObserved, sortScope, byPage, verdict). Use when wiring site insights into an app, reading search or indexing data as an agent, checking if URLs are indexed, or on keyUnreadable, tokenRefused, notUserOfProperty, budgetRefused."
 metadata:
   author: mgamadeus
-  version: "0.1.0-rc.3"
+  version: "0.1.0-rc.4"
   module: mgamadeus/ddd-site-insights
 ---
 
@@ -27,6 +27,11 @@ Google Search Console in the admin and for agents: a live reader with honest cov
   `DateTimeImmutable`); a framework `Date` is built with `SearchDays::toDate()` and never modified.
 - **Failures are never cached**; the module's own freshness check (`fetchedAt` against the question's lifetime)
   applies to every cache hit.
+- **Anything that counts a URL inspection is never GET.** Google allows 2,000 URL inspections per day and 600 per
+  minute per property; every inspection the module sends is counted against its share (`budgets.inspectionShare`).
+  An endpoint that may send one is a POST (a mutation in the npm package), so no client, prefetch or cache refetches
+  it on its own: `POST /sites/{siteKey}/accessChecks`, `POST /sites/{siteKey}/indexing/inspections`. A new endpoint that
+  inspects follows the same rule.
 
 ## Install
 
@@ -62,7 +67,7 @@ Raise `revision` when the account behind the entry changes: older cache entries 
 `schemaVersion`), `budgets.php` (share of Google's quotas, `rowsPerCall` 2,500, `maxRowsPerCall` 10,000,
 `sortFetchCeiling` 5,000, timeouts, retention, comparison limits, `counterpart` limits (`keysPerChunk` 100,
 `maxChunks` 5, `regexMaxLength` 4,000), `maxPageGroups` 20, `overviewListSize` 25, `detailListSize` 50,
-`callsPerOperation`), `opportunities.php` (thresholds of the rules, used from a later version).
+`exportRetries` 2, `exportRetryBackoffMilliseconds` 1,000, `callsPerOperation`), `opportunities.php` (thresholds of the rules, used from a later version).
 
 Code reads configuration only through `SiteInsightsConfigService`, which returns value objects:
 `getSiteEntries(): SiteInsightsSiteEntries`, `getCredentialsConfig(): SiteInsightsCredentialsConfig` (entries by name,
@@ -87,7 +92,9 @@ Window options (every search command): `--preset=7d|28d|90d|6m|12m|16m` (default
 Filter options (lists): `--queryContains`, `--queryEquals`, `--pageContains`, `--pageEquals`, `--pageGroup=<key>`,
 `--country=<alpha-3 lower case>`, `--device=desktop|mobile|tablet`.
 List options: `--limit=1..1000` (50), `--offset=0..24999` (0), `--sortBy=clicks|impressions|ctr|position`,
-`--sortDirection=desc|asc` (default desc, asc for position).
+`--sortDirection=desc|asc` (default desc, asc for position). `--limit` is at most 1,000 (the endpoints' `limit` too):
+a longer list is read page by page with `--offset` (0, 1000, 2000, …; up to 25,000 rows, Google's ceiling), and the
+whole report to its end with `export`.
 
 | Command | Options | JSON property |
 |---|---|---|
@@ -98,12 +105,26 @@ List options: `--limit=1..1000` (50), `--offset=0..24999` (0), `--sortBy=clicks|
 | `app:site-insights:page-groups <site>` | window, format | `searchPageGroupPerformances` |
 | `app:site-insights:page <site> <url>` | window, format | `searchPageDetail` |
 | `app:site-insights:query <site> "<query>"` | window, format | `searchQueryDetail` |
-| `app:site-insights:export <site>` | window, `--dimensions=query,page` (subset of query, page, country, device, date), `--byDay` / `--no-byDay` (default on for query and page together), `--output=<file>` | NDJSON rows (stdout or the file), then one line `{"searchExportSummary": …}`; exit 1 when it stopped before its end (`limitReached` or `error`) |
+| `app:site-insights:sitemaps <site>` | format; exit 1 when the list failed | `sitemapStatuses` |
+| `app:site-insights:inspect <site> <url>…` | `--languageCode=en-US`, format; 1 to `budgets.maxInspectionUrls` URLs (more: exit 2, nothing sent); needs `canInspect()`; exit 1 when a URL failed (all are printed) | `urlIndexInspections` |
+| `app:site-insights:export <site>` | window, `--dimensions=query,page` (subset of query, page, country, device, date), `--byDay` / `--no-byDay` (default on for query and page together), `--output=<file>`, `--resumeAfter=<Y-m-d>` (continue after that day; inside the window, else exit 2) | NDJSON rows (stdout or the file), then one line `{"searchExportSummary": …}`; exit 1 when it stopped before its end (`limitReached` or `error`) |
 
 `check-access` prints states only: per site `keyReadable`, `tokenObtained`, `propertyListed`, `permissionLevel`,
 `searchAnalytics`, `sitemaps`, `urlInspection`, `budgetCountersShared` — each `ok`, `failed` with `cause`, or `skipped`.
 `export` is console only (no endpoint), never cached, needs `canExport()`, and stops at
-`budgets.callsPerOperation.export` calls with `limitReached` and `lastFinishedDay`.
+`budgets.callsPerOperation.export` calls with `limitReached` and `lastFinishedDay`. A page whose call fails with a
+retryable cause (`transport`, `providerFailed`, `quotaExceeded`; not `budgetRefused`) is asked again up to
+`budgets.exportRetries` times (default 2), waiting `budgets.exportRetryBackoffMilliseconds` (1,000) × the retry's
+number; retries count as calls (`retries` in the summary and per day). A part that still fails ends the run with
+`error`: `cause`, `retryable`, `providerStatus` (when Google answered), `attempts`, and for `transport`
+`transportFailure` (`kind` `timeout` or `endedBeforeTimeout`, `elapsedMilliseconds`, `timeoutSeconds`; the private
+transport does not tell a connection, DNS or reset error from a stalled transfer).
+
+**Continue a run that ended early:** run the same export again with the window of its summary
+(`--from=<window.from> --to=<window.to>`, not the preset: the last final day may have moved) and
+`--resumeAfter=<lastFinishedDay>`. Rows of the unfinished day may have been written already: with `--output`, write the
+continuation to a new file and drop the rows of days after `lastFinishedDay` from the first one. Without a
+`lastFinishedDay` (the first day failed), run it again without `--resumeAfter`.
 
 ## Admin endpoints
 
@@ -127,6 +148,8 @@ class AdminSiteInsightsSearchController extends AdminController
 | `GET /sites/{siteKey}/search/pageGroups` | Search | window | `searchPageGroupPerformances` |
 | `GET /sites/{siteKey}/search/pageDetail` | Search | window, `url` (required) | `searchPageDetail` |
 | `GET /sites/{siteKey}/search/queryDetail` | Search | window, `query` (required, exact) | `searchQueryDetail` |
+| `GET /sites/{siteKey}/indexing/sitemaps` | Indexing | — (cached `cache.sitemapsTtlSeconds`, other-resources budget, no daily quota) | `sitemapStatuses` |
+| `POST /sites/{siteKey}/indexing/inspections` | Indexing | body `urls` (`string[]`, 1 to `budgets.maxInspectionUrls`), `languageCode` (optional, `en` or `en-US`); needs `canInspect()`; each URL not cached counts one inspection | `urlIndexInspections` |
 
 Query parameters: window `preset`, `from`, `to` (`Y-m-d` strings), `compare`, `searchType`, `dataState`; filters
 `queryContains`, `queryEquals`, `pageContains`, `pageEquals`, `pageGroup`, `country`, `device`; list `limit`,
@@ -134,18 +157,25 @@ Query parameters: window `preset`, `from`, `to` (`Y-m-d` strings), `compare`, `s
 only against the module's per-minute Search Analytics budget, are cached, and consume no daily quota. Every action asks
 the access policy first; the service validates every value again (400).
 
+Mount the indexing trait the same way (`use SiteInsightsIndexingControllerTrait;` in a controller under the same
+`#[Route('/siteInsights')]`); the three traits may share one controller.
+
 Request graph: the overview asks totals, series, top queries (25), top pages (25), countries (250), devices (5) and,
 with a comparison, totals and series of the comparison window — distinct questions in **one** batch after the cached
 availability probe. A list sorted by clicks descending is one call from `offset`; any other sort pages
 `rowsPerCall` up to `sortFetchCeiling` and sorts those rows. Counterparts: one batch of at most `counterpart.maxChunks`
 calls (`includingRegex ^(?:k1|…)$` per chunk; countries and devices: one call). Page groups: two calls per group.
-Details: five calls. Budgets: `callsPerOperation` (overview 10, list 8, pageGroups 41, details 7, export 1,500).
+Details: five calls. Sitemaps: one call (other resources). Inspections: the distinct URLs not answered from the cache
+in **one** batch, reserved against the inspection quota (day and minute) in one step — refused as a whole with
+`budgetRefused` when the share is used up; a URL outside the property gets `invalidRequest` without a call. Budgets:
+`callsPerOperation` (overview 10, list 8, pageGroups 41, details 7, sitemaps 1, inspections 20, export 1,500).
 
 npm: `createSiteInsightsApi({ baseApi, apiPrefix: '/api/admin/siteInsights' })` of `@mgamadeus/ddd-site-insights`
 injects these operations into the application's RTK Query api once (tag `SiteInsights`) and returns the hooks
 `useSitesQuery`, `useCheckAccessMutation`, `useSearchOverviewQuery`, `useSearchQueriesQuery`, `useSearchPagesQuery`,
 `useSearchCountriesQuery`, `useSearchDevicesQuery`, `useSearchPageGroupsQuery`, `useSearchPageDetailQuery`,
-`useSearchQueryDetailQuery`. Keep the module's tag out of the application's own generated SDK (`filterEndpoints`).
+`useSearchQueryDetailQuery`, `useIndexingSitemapsQuery`, `useInspectUrlsMutation` (body under the generated key
+`dddPresentationApiAdminSiteInsightsDtosSiteInsightsInspectionsPostRequestDto`; call it from a user action only). Keep the module's tag out of the application's own generated SDK (`filterEndpoints`).
 View logic of the same entry: `formatDelta()`, `formatCoverageNotes()`, `formatWindowNote()`, `windowPresets`.
 
 ## Extension points (register a subclass under the module's class id)
@@ -156,7 +186,7 @@ otherwise the fetch fails at run time with "service or alias has been removed or
 
 | Service | Default |
 |---|---|
-| `SiteInsightsAccessPolicyService` | `canView()` = admin role; `canInspect()`, `canExport()` = `canView()`; `findAccountForCliOperations()` = the application's CLI account |
+| `SiteInsightsAccessPolicyService` | `canView()` = admin role; `canInspect()` (URL inspection, `requireInspector()`), `canExport()` = `canView()`; `findAccountForCliOperations()` = the application's CLI account |
 | `SiteInsightsSitesProviderService` | sites from `sites.php`, validated |
 | `SiteInsightsCredentialsProviderService` | token from `GoogleServiceAccountTokensService` |
 
@@ -189,6 +219,23 @@ carries `coverage` or `error`. Read these before a number:
 - **Series**: every day of the window once; a day without a row is filled with zeros, `hasData` false and
   `isFilledDay` true.
 - **Freshness**: `coverage.fromCache`, `coverage.fetchedAt` (when Google answered), `providerCalls`.
+
+## Indexing: what an answer means
+
+- **Sitemaps** (`sitemapStatuses`): one entry per file Google lists for the property — `path`, `type`, `isIndex`,
+  `isPending`, `lastSubmitted` (unset when Google found the file without a submission), `lastDownloaded`, `errors`,
+  `warnings`, `submitted` (sum over `submittedByType`: content type and submitted URLs). There is **no indexed count**:
+  Google's per-file `indexed` field is deprecated and not read; whether URLs are indexed is answered by inspection. An
+  index file usually reports no contents (`submitted` 0). A failed list carries `error` and no files.
+- **Inspections** (`urlIndexInspections`): one entry per distinct URL in the order given (`duplicateUrlsDropped`
+  counts repeats) — `verdict` (PASS, PARTIAL, FAIL, NEUTRAL), `coverageState` (Google's text), `indexingState`,
+  `robotsTxtState`, `pageFetchState`, `lastCrawlTime`, `crawledAs`, `googleCanonical`, `userCanonical`, `sitemaps`,
+  `referringUrls`, `inspectionResultLink`, `inspectedAt`, `fromCache` — or `error` for that URL alone. The current
+  state only, no history; a cached answer may be up to `cache.inspectionTtlSeconds` (a day) old.
+- **Coverage** (`IndexingCoverage`): `requestedParts`, `partsFromCache`, `failedParts`, `providerCalls`,
+  `inspectionsCounted` (what this request charged to the daily counter, retries included), `fromCache`, `fetchedAt`
+  (oldest answer), `cacheLifetimeSeconds`. `inspectionCounterScope` says whether the daily counter is `shared`,
+  `perPod` (each pod counts alone, see below) or `notCounted`.
 
 ## Error causes (`SiteInsightsErrorCause`)
 
@@ -224,3 +271,5 @@ so every console run exchanges once — harmless, and never an error. Budget cou
 | `propertyListed failed` | the property string must match Search Console exactly (trailing slash, `sc-domain:`) |
 | `apiNotEnabled` | enable the Search Console API in the service account's project |
 | commands answer 403 | the CLI account does not pass the access policy |
+| inspections answer `budgetRefused` | the day's share (`inspectionsPerDayPerSite × inspectionShare`, Pacific Time day) or the minute's share is used up; cached URLs still answer |
+| `inspect` exits 2 | more URLs than `budgets.maxInspectionUrls`, no URL, or a malformed `--languageCode`; nothing was sent |

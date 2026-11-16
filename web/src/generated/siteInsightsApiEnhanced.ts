@@ -42,5 +42,14 @@ export const siteInsightsApiEnhanced = codegenBaseApi.enhanceEndpoints({
     getAdminSiteInsightsSitesSearchQueryDetailBySiteKey: {
       providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
     },
+    getAdminSiteInsightsSitesIndexingSitemapsBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    postAdminSiteInsightsSitesIndexingInspectionsBySiteKey: {
+      invalidatesTags: [
+        { type: "Siteinsights" as const, id: "LIST" },
+        { type: "Siteinsights" as const },
+      ],
+    },
   },
 });

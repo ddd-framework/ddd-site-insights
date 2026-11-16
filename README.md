@@ -5,9 +5,9 @@ knows about your websites, readable in the admin and by agents. The module reads
 [`mgamadeus/ddd-argus`](https://github.com/ddd-framework/ddd-argus), caches the answers, stores nothing, and states in
 every answer what it covers (which days, which data state, how many rows of how many, how aggregated).
 
-Status: `0.1.0-rc.3` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
-coverage model, access checks) and search performance (overview, lists with comparison counterparts, page groups,
-page and query detail, export). Indexing and opportunities follow.
+Status: `0.1.0-rc.4` — module core (sites, credentials, token exchange, request builder, budgets, window arithmetic,
+coverage model, access checks), search performance (overview, lists with comparison counterparts, page groups,
+page and query detail, export) and indexing (sitemap states, URL inspection). Opportunities follow.
 
 ## Install
 
@@ -57,13 +57,29 @@ php bin/console app:site-insights:page-groups example-site --compare=previousPer
 php bin/console app:site-insights:page example-site https://example.test/guides/alpha/
 php bin/console app:site-insights:query example-site "example widget"
 php bin/console app:site-insights:export example-site --dimensions=query,page --output=rows.ndjson
+# a run that ended with an error: same window, continue after its lastFinishedDay
+php bin/console app:site-insights:export example-site --from=2025-07-20 --to=2026-11-13 --resumeAfter=2026-05-29 --output=rows-2.ndjson
+php bin/console app:site-insights:sitemaps example-site
+php bin/console app:site-insights:inspect example-site https://example.test/ https://example.test/guides/alpha/ --format=json
 ```
 
 Admin API: mount `SiteInsightsSitesControllerTrait` (`GET /sites`, `POST /sites/{siteKey}/accessChecks`) and
 `SiteInsightsSearchControllerTrait` (`GET /sites/{siteKey}/search/overview`, `…/queries`, `…/pages`, `…/countries`,
-`…/devices`, `…/pageGroups`, `…/pageDetail?url=`, `…/queryDetail?query=`) in controllers of the application. Who may
-read is decided by `SiteInsightsAccessPolicyService` (default: admin accounts); an application registers its own
-subclass under that service id. The skill `.claude/skills/ddd-module-site-insights-specialist/SKILL.md` lists every
+`…/devices`, `…/pageGroups`, `…/pageDetail?url=`, `…/queryDetail?query=`) and `SiteInsightsIndexingControllerTrait`
+(`GET /sites/{siteKey}/indexing/sitemaps`, `POST /sites/{siteKey}/indexing/inspections` with the body
+`{"urls": [...], "languageCode": "en-US"}`) in controllers of the application. Who may read and who may inspect is
+decided by `SiteInsightsAccessPolicyService` (default: admin accounts); an application registers its own subclass under
+that service id.
+
+Lists return at most 1,000 rows per call (`--limit`, `limit`); page further with `--offset` / `offset`, or export.
+The export asks a failed page again (`budgets.exportRetries`, default 2) before it ends; a run that ended with an
+`error` continues with the same `--from` / `--to` and `--resumeAfter=<lastFinishedDay>` of its summary.
+
+**Anything that counts a URL inspection is never GET.** Google allows 2,000 inspections per day and 600 per minute per
+property; the module uses its configured share (`budgets.inspectionShare`, default half) and counts every inspection
+it sends. Inspecting is therefore a POST (and a mutation in the npm package): no client, cache or prefetch repeats it
+on its own. An inspection is cached a day per URL; a cached one counts nothing. A request names at most
+`budgets.maxInspectionUrls` URLs (default 20; more are refused). The skill `.claude/skills/ddd-module-site-insights-specialist/SKILL.md` lists every
 parameter and how to read the coverage of an answer.
 
 ## Security

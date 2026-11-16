@@ -103,6 +103,12 @@ class SiteInsightsBudgetsConfig extends ValueObject
     /** @var int Most URLs of one inspection request */
     public int $maxInspectionUrls = 20;
 
+    /** @var int How often an export asks a page again after a retryable failure before it ends */
+    public int $exportRetries = 2;
+
+    /** @var int Wait before an export retry, times the retry's number (1 s, 2 s, …) */
+    public int $exportRetryBackoffMilliseconds = 1000;
+
     /** @var int Rows of each top list of the overview */
     public int $overviewListSize = 25;
 
@@ -116,7 +122,7 @@ class SiteInsightsBudgetsConfig extends ValueObject
     public static function fromConfigSettings(array $configuredSettings): static
     {
         $budgetsConfig = new static();
-        foreach (['searchAnalyticsPerMinutePerSite', 'inspectionsPerDayPerSite', 'inspectionsPerMinutePerSite', 'otherPerMinute', 'rowsPerCall', 'maxRowsPerCall', 'sortFetchCeiling', 'maxResponseBytes', 'batchTimeoutSeconds', 'singleCallTimeoutSeconds', 'maxPageGroups', 'maxInspectionUrls', 'overviewListSize', 'detailListSize'] as $integerSettingName) {
+        foreach (['searchAnalyticsPerMinutePerSite', 'inspectionsPerDayPerSite', 'inspectionsPerMinutePerSite', 'otherPerMinute', 'rowsPerCall', 'maxRowsPerCall', 'sortFetchCeiling', 'maxResponseBytes', 'batchTimeoutSeconds', 'singleCallTimeoutSeconds', 'maxPageGroups', 'maxInspectionUrls', 'overviewListSize', 'detailListSize', 'exportRetries', 'exportRetryBackoffMilliseconds'] as $integerSettingName) {
             if (isset($configuredSettings[$integerSettingName])) {
                 $budgetsConfig->$integerSettingName = (int)$configuredSettings[$integerSettingName];
             }

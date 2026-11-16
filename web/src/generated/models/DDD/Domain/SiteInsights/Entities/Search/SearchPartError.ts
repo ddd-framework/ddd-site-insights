@@ -1,3 +1,5 @@
+import { SearchTransportFailure } from "./SearchTransportFailure";
+
 export type SearchPartError = {
   /** A SiteInsightsErrorCause value */
   cause?: string;
@@ -7,6 +9,9 @@ export type SearchPartError = {
   providerStatus?: number | null;
   /** Whether asking again later may succeed */
   retryable?: boolean;
+  /** How often the part was asked before it was given up (set by the export, retries included) */
+  attempts?: number | null;
+  transportFailure?: SearchTransportFailure;
   /** The fully qualified class name of the object */
   objectType?: string | null;
 };

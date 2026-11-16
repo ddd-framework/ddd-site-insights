@@ -18,6 +18,10 @@ import { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiResponse } from ".
 import { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse";
 import { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg";
+import { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse } from "./models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse";
+import { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg";
+import { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse } from "./models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse";
+import { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg } from "./models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg";
 import { codegenBaseApi as api } from "../api/codegenBaseApi";
 import { siteInsightsApiRequests } from "./siteInsightsApiRequests";
 
@@ -91,6 +95,20 @@ const injectedRtkApi = api.injectEndpoints({
     >({
       query:
         siteInsightsApiRequests.getAdminSiteInsightsSitesSearchQueryDetailBySiteKey,
+    }),
+    getAdminSiteInsightsSitesIndexingSitemapsBySiteKey: build.query<
+      GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
+      GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg
+    >({
+      query:
+        siteInsightsApiRequests.getAdminSiteInsightsSitesIndexingSitemapsBySiteKey,
+    }),
+    postAdminSiteInsightsSitesIndexingInspectionsBySiteKey: build.mutation<
+      PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse,
+      PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg
+    >({
+      query:
+        siteInsightsApiRequests.postAdminSiteInsightsSitesIndexingInspectionsBySiteKey,
     }),
   }),
   overrideExisting: false,

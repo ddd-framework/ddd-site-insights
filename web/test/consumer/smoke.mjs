@@ -24,6 +24,16 @@ if (queries.url !== '/api/v2/admin/insights/sites/example-site/search/queries' |
   fail(`unexpected request ${JSON.stringify(queries)}`);
 }
 if (requests.checkAccess({ siteKey: 'example-site' }).method !== 'POST') fail('the access check must be a POST');
+const sitemaps = requests.indexingSitemaps({ siteKey: 'example-site' });
+if (sitemaps.url !== '/api/v2/admin/insights/sites/example-site/indexing/sitemaps' || (sitemaps.method ?? 'GET') !== 'GET') {
+  fail(`unexpected request ${JSON.stringify(sitemaps)}`);
+}
+// anything that counts a URL inspection is never GET
+const inspections = requests.inspectUrls({
+  siteKey: 'example-site',
+  dddPresentationApiAdminSiteInsightsDtosSiteInsightsInspectionsPostRequestDto: { urls: ['https://example.test/'] },
+});
+if (inspections.method !== 'POST' || inspections.body?.urls?.[0] !== 'https://example.test/') fail(`the inspection must be a POST with a body: ${JSON.stringify(inspections)}`);
 if (main.formatDelta({ counterpartState: 'notObserved' }, 'clicks').direction !== 'none') fail('a missing counterpart must not be a number');
 
 // the factory against a real host api (RTK Query of the consumer's installation)
@@ -31,8 +41,10 @@ const { createApi, fetchBaseQuery } = await import('@reduxjs/toolkit/query/react
 const baseApi = createApi({ reducerPath: 'api', baseQuery: fetchBaseQuery({ baseUrl: 'https://example.test' }), endpoints: () => ({}) });
 const siteInsightsApi = main.createSiteInsightsApi({ baseApi, apiPrefix: '/api/admin/siteInsights' });
 if (main.createSiteInsightsApi({ baseApi, apiPrefix: '/api/admin/siteInsights' }) !== siteInsightsApi) fail('a second call must return the first result');
-if (typeof siteInsightsApi.useSearchOverviewQuery !== 'function' || typeof siteInsightsApi.useCheckAccessMutation !== 'function') fail('hooks missing');
+for (const hookName of ['useSearchOverviewQuery', 'useCheckAccessMutation', 'useIndexingSitemapsQuery', 'useInspectUrlsMutation']) {
+  if (typeof siteInsightsApi[hookName] !== 'function') fail(`hook ${hookName} missing`);
+}
 const injected = Object.keys(baseApi.endpoints).filter(name => name.startsWith('siteInsights'));
-if (injected.length !== 10) fail(`expected 10 injected endpoints, got ${injected.join(', ')}`);
+if (injected.length !== 12) fail(`expected 12 injected endpoints, got ${injected.join(', ')}`);
 
 console.log(`ok      main entry exports ${Object.keys(main).length} names; factory injects ${injected.length} endpoints`);

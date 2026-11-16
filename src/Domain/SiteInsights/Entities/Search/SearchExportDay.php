@@ -22,6 +22,9 @@ class SearchExportDay extends ValueObject
     /** @var int Provider calls made */
     public int $providerCalls = 0;
 
+    /** @var int Calls asked again after a retryable failure (budgets.exportRetries per page) */
+    public int $retries = 0;
+
     /** @var bool The last page returned fewer rows than asked (not "all rows": the provider keeps top rows only) */
     public bool $providerRowsExhausted = false;
 

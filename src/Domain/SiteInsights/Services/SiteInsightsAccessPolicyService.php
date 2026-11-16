@@ -65,4 +65,17 @@ class SiteInsightsAccessPolicyService extends Service
         }
         return $authAccount;
     }
+
+    /**
+     * @return Account the authenticated account, which may inspect URLs (counted against the inspection quota)
+     * @throws ForbiddenException
+     */
+    public function requireInspector(): Account
+    {
+        $authAccount = $this->requireViewer();
+        if (!$this->canInspect($authAccount)) {
+            throw new ForbiddenException('This account may not inspect URLs');
+        }
+        return $authAccount;
+    }
 }

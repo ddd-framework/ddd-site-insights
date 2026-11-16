@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DDD\Domain\SiteInsights\Services;
 
 use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsBudgetsConfig;
+use DDD\Domain\SiteInsights\Entities\Errors\SiteInsightsErrorCause;
 use DDD\Domain\SiteInsights\Entities\Search\SearchComparisonWindow;
 use DDD\Domain\SiteInsights\Entities\Search\SearchDetailParts;
 use DDD\Domain\SiteInsights\Entities\Search\SearchExportDay;
@@ -17,6 +18,7 @@ use DDD\Domain\SiteInsights\Entities\Search\SearchMetricsComparison;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPageDetail;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPageGroupPerformance;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPageGroupPerformances;
+use DDD\Domain\SiteInsights\Entities\Search\SearchPartError;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPerformanceOverview;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPerformanceRow;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPerformanceRows;
@@ -29,6 +31,7 @@ use DDD\Domain\SiteInsights\Entities\Search\SearchReport;
 use DDD\Domain\SiteInsights\Entities\Search\SearchReports;
 use DDD\Domain\SiteInsights\Entities\Search\SearchRowsCoverage;
 use DDD\Domain\SiteInsights\Entities\Search\SearchTotals;
+use DDD\Domain\SiteInsights\Entities\Search\SearchTransportFailure;
 use DDD\Domain\SiteInsights\Entities\Search\SearchWindow;
 use DDD\Domain\SiteInsights\Entities\Search\SearchWindowRequest;
 use DDD\Domain\SiteInsights\Entities\Sites\InsightsSite;
@@ -371,7 +374,11 @@ class SearchPerformanceService extends Service
      * Pages a report to its end within `budgets.callsPerOperation.export` calls: one window per day when asked by day,
      * pages of `budgets.maxRowsPerCall` rows until a page returns fewer rows than asked, sequentially, never cached.
      * Every row goes to `$writeRow` as it arrives (nothing is held); above the budget the export stops with
-     * `limitReached` and names the last finished day; a failed part stops it with `error`.
+     * `limitReached` and names the last finished day. A page whose call fails with a retryable cause (transport,
+     * provider, quota; not the module's own budget) is asked again up to `budgets.exportRetries` times after
+     * `budgets.exportRetryBackoffMilliseconds` × the retry's number; retries count against the call budget. A part
+     * that still fails, or fails with another cause, stops the export with `error` (attempts and, for a transport
+     * failure, the measured `transportFailure`). `resumeAfter` continues a run after its `lastFinishedDay`.
      *
      * @param string $siteKey
      * @param SearchExportRequest $searchExportRequest
@@ -379,7 +386,7 @@ class SearchPerformanceService extends Service
      * @return SearchExportSummary
      * @throws ForbiddenException when the account may not export
      * @throws NotFoundException
-     * @throws BadRequestException
+     * @throws BadRequestException also for a resumeAfter outside the window
      * @throws InternalErrorException
      * @throws SiteInsightsProviderUnavailableException
      */
@@ -408,9 +415,23 @@ class SearchPerformanceService extends Service
 
         $fromDay = SearchDays::fromDate($searchWindow->from);
         $toDay = SearchDays::fromDate($searchWindow->to);
-        $partCount = $searchExportSummary->byDay ? $searchWindow->days : 1;
+        $firstDay = $fromDay;
+        if (isset($searchExportRequest->resumeAfter)) {
+            $resumeAfterDay = SearchDays::fromDate($searchExportRequest->resumeAfter);
+            if (SearchDays::daysInclusive($fromDay, $resumeAfterDay) < 1 || SearchDays::daysInclusive($resumeAfterDay, $toDay) < 2) {
+                throw new BadRequestException(sprintf(
+                    'resumeAfter must be a day from %s to the day before %s (the window); %s given',
+                    $fromDay,
+                    $toDay,
+                    $resumeAfterDay
+                ));
+            }
+            $firstDay = SearchDays::addDays($resumeAfterDay, 1);
+            $searchExportSummary->resumedAfter = SearchDays::toDate($resumeAfterDay);
+        }
+        $partCount = $searchExportSummary->byDay ? SearchDays::daysInclusive($firstDay, $toDay) : 1;
         for ($partIndex = 0; $partIndex < $partCount; $partIndex++) {
-            $partFromDay = $searchExportSummary->byDay ? SearchDays::addDays($fromDay, $partIndex) : $fromDay;
+            $partFromDay = $searchExportSummary->byDay ? SearchDays::addDays($firstDay, $partIndex) : $firstDay;
             $partToDay = $searchExportSummary->byDay ? $partFromDay : $toDay;
             $searchExportDay = new SearchExportDay();
             $searchExportDay->from = SearchDays::toDate($partFromDay);
@@ -421,26 +442,49 @@ class SearchPerformanceService extends Service
             $partWindow->to = SearchDays::toDate($partToDay);
             $partWindow->days = SearchDays::daysInclusive($partFromDay, $partToDay);
             $startRow = 0;
+            $pageAttempts = 0;
+            $lastPageError = null;
             while (true) {
                 if ($searchExportSummary->providerCalls >= $callLimit) {
                     $searchExportDay->limitReached = true;
                     $searchExportSummary->limitReached = true;
+                    if ($lastPageError !== null) {
+                        // the budget ended the retries: the failure stays named
+                        $searchExportDay->error = $lastPageError;
+                        $searchExportSummary->error = $lastPageError;
+                    }
                     return $searchExportSummary;
                 }
                 $exportQuestion = $this->buildQuestion($partWindow, $dimensions, new SearchQuestionFilters(), $aggregationType, $rowLimit, $startRow);
                 $exportQuestion->cacheable = false;
+                $pageAttempts++;
+                $callStartedAtMilliseconds = $this->getMonotonicMilliseconds();
                 $pageRows = $this->findReport(
                     $this->getGoogleSearchConsoleSourceService()->loadReports($insightsSite, $this->createQuestionSet($exportQuestion), false),
                     $exportQuestion
                 )->performanceRows;
+                $callElapsedMilliseconds = $this->getMonotonicMilliseconds() - $callStartedAtMilliseconds;
                 $pageCalls = max(1, $pageRows->coverage->providerCalls);
                 $searchExportDay->providerCalls += $pageCalls;
                 $searchExportSummary->providerCalls += $pageCalls;
                 if (isset($pageRows->error)) {
-                    $searchExportDay->error = $pageRows->error;
-                    $searchExportSummary->error = $pageRows->error;
+                    $lastPageError = $pageRows->error;
+                    $lastPageError->attempts = $pageAttempts;
+                    if ($lastPageError->getCause() === SiteInsightsErrorCause::TRANSPORT) {
+                        $lastPageError->transportFailure = SearchTransportFailure::create($callElapsedMilliseconds, $budgetsConfig->batchTimeoutSeconds);
+                    }
+                    if ($this->isExportRetryable($lastPageError) && $pageAttempts <= $budgetsConfig->exportRetries) {
+                        $searchExportDay->retries++;
+                        $searchExportSummary->retries++;
+                        $this->waitBeforeExportRetry($budgetsConfig->exportRetryBackoffMilliseconds * $pageAttempts);
+                        continue;
+                    }
+                    $searchExportDay->error = $lastPageError;
+                    $searchExportSummary->error = $lastPageError;
                     return $searchExportSummary;
                 }
+                $pageAttempts = 0;
+                $lastPageError = null;
                 foreach ($pageRows->getElements() as $searchPerformanceRow) {
                     $writeRow($searchPerformanceRow);
                 }
@@ -456,6 +500,30 @@ class SearchPerformanceService extends Service
             $searchExportSummary->lastFinishedDay = SearchDays::toDate($partToDay);
         }
         return $searchExportSummary;
+    }
+
+    /**
+     * @param SearchPartError $searchPartError
+     * @return bool whether an export asks the page again: a retryable cause, except the module's own budget (asking
+     *         again at once would be refused again)
+     */
+    protected function isExportRetryable(SearchPartError $searchPartError): bool
+    {
+        return $searchPartError->retryable && $searchPartError->getCause() !== SiteInsightsErrorCause::BUDGET_REFUSED;
+    }
+
+    /** Seam for tests: waits before an export retry */
+    protected function waitBeforeExportRetry(int $milliseconds): void
+    {
+        if ($milliseconds > 0) {
+            usleep($milliseconds * 1000);
+        }
+    }
+
+    /** Seam for tests: a monotonic clock in milliseconds (how long a failed call took) */
+    protected function getMonotonicMilliseconds(): int
+    {
+        return (int)(hrtime(true) / 1000000);
     }
 
     /**

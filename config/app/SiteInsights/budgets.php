@@ -41,6 +41,10 @@ return [
     'counterpart' => ['keysPerChunk' => 100, 'maxChunks' => 5, 'regexMaxLength' => 4000],
     'maxPageGroups' => 20,
     'maxInspectionUrls' => 20,
+    // an export asks a page again this often after a retryable failure (transport, provider, quota), waiting
+    // exportRetryBackoffMilliseconds times the retry's number; retries count against callsPerOperation.export
+    'exportRetries' => 2,
+    'exportRetryBackoffMilliseconds' => 1000,
     // rows of each top list of the overview, and of the list of a page or query detail
     'overviewListSize' => 25,
     'detailListSize' => 50,

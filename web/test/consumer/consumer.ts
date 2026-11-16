@@ -10,13 +10,17 @@ import {
   formatCoverageNotes,
   formatDelta,
   type GetAdminSiteInsightsSitesApiResponse,
+  type GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
   type GetAdminSiteInsightsSitesSearchQueriesBySiteKeyApiArg,
   type InsightsSite,
   type PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg,
+  type PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg,
   type SearchPerformanceOverview,
   type SearchPerformanceRows,
   type SiteInsightsAccessCheck,
   type SiteInsightsApi,
+  type SitemapStatus,
+  type UrlIndexInspection,
   type WindowDays,
   windowPresets,
 } from '@mgamadeus/ddd-site-insights';
@@ -41,6 +45,15 @@ export const rows: SearchPerformanceRows = {
   coverage: { fetchedRows: 1, providerRowsExhausted: true, anonymizedQueriesOmitted: true },
   elements: [{ query: 'example widget', metrics: { clicks: 3, impressions: 40, ctr: 0.075, position: 4.2 }, comparison: { counterpartState: 'notObserved' } }],
 };
+export const sitemapStatus: SitemapStatus = { path: 'https://example.test/sitemap.xml', isIndex: true, submitted: 0, submittedByType: { elements: [] } };
+export const sitemapsResponse: GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse = {
+  sitemapStatuses: { siteKey: 'example-site', elements: [sitemapStatus], coverage: { requestedParts: 1, fromCache: true } },
+};
+export const inspectionsArg: PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg = {
+  siteKey: 'example-site',
+  dddPresentationApiAdminSiteInsightsDtosSiteInsightsInspectionsPostRequestDto: { urls: ['https://example.test/'], languageCode: 'en-US' },
+};
+export const inspection: UrlIndexInspection = { url: 'https://example.test/', verdict: 'PASS' };
 export const notes: CoverageNote[] = formatCoverageNotes(rows);
 export const delta: FormattedDelta = formatDelta(rows.elements?.[0]?.comparison, 'clicks');
 export const overviewDays: number | undefined = ({} as SearchPerformanceOverview).window?.days;

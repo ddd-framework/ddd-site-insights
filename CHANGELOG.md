@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.1.0-rc.4
+
+Indexing.
+
+### Added
+- `SearchIndexingService`: the sitemap files of a site (`getSitemapStatuses()`: type, index, pending, last submitted
+  and downloaded, errors, warnings, submitted URLs per content type; cached `cache.sitemapsTtlSeconds`) and the
+  inspection of a bounded list of URLs (`inspectUrls()`: 1 to `budgets.maxInspectionUrls`, duplicates once, URLs
+  outside the property fail alone with `invalidRequest` without a call; the others from the cache or in one batch,
+  reserved against the inspection share in one step, cached a day per URL). Inspecting needs
+  `SiteInsightsAccessPolicyService::canInspect()` (new `requireInspector()`).
+- Value objects `SitemapStatus(es)`, `SitemapContentCount(s)`, `UrlIndexInspection(s)`, `IndexingCoverage`
+  (`requestedParts`, `partsFromCache`, `failedParts`, `providerCalls`, `inspectionsCounted`, `fromCache`, `fetchedAt`,
+  `cacheLifetimeSeconds`); per-URL `error`; `inspectionCounterScope`, `duplicateUrlsDropped`.
+- Endpoints `SiteInsightsIndexingControllerTrait`: `GET /sites/{siteKey}/indexing/sitemaps`,
+  `POST /sites/{siteKey}/indexing/inspections` (body `urls`, `languageCode`). Anything that counts a URL inspection is
+  never GET.
+- Commands `app:site-insights:sitemaps <site>` and `app:site-insights:inspect <site> <url>…` (`--languageCode`,
+  `--format=table|json|toon`; JSON = the endpoint's payload; exit 2 beyond `budgets.maxInspectionUrls`, exit 1 when a
+  URL failed).
+- Raw answers: sitemap files carry `contents` (`GoogleSitemapContent(s)`, submitted per type; Google's deprecated
+  `indexed` is not read); URL inspections carry `crawledAs`, `sitemaps`, `referringUrls`; batch root
+  `ArgusGoogleUrlInspections`. The schema version of both raw answers is 2: older cache entries are not read.
+- `SearchConsoleSourceService::loadSitemapStatuses()` and `inspectUrls()`.
+- npm: `useIndexingSitemapsQuery`, `useInspectUrlsMutation` (a mutation that invalidates nothing), `indexingSitemaps`
+  and `inspectUrls` in `buildSiteInsightsRequests`; the indexing types.
+
+- Export: a page whose call fails with a retryable cause (transport, provider, quota) is asked again up to
+  `budgets.exportRetries` times (default 2) after `budgets.exportRetryBackoffMilliseconds` (1,000) × the retry's
+  number; retries count against `callsPerOperation.export` (`retries` in the summary and per day). A part that still
+  fails ends the run as before.
+- `SearchPartError::$attempts` and `::$transportFailure` (`SearchTransportFailure`: `kind` `timeout` or
+  `endedBeforeTimeout`, `elapsedMilliseconds`, `timeoutSeconds`), set by the export. The private transport hides the
+  HTTP client's exception, so connection, DNS and stall errors are not told apart; the HTTP status stays
+  `providerStatus` when Google answered.
+- `app:site-insights:export --resumeAfter=<Y-m-d>` (`SearchExportRequest::$resumeAfter`,
+  `SearchExportSummary::$resumedAfter`): continues after that day of the same window; a day outside the window is
+  refused (exit 2).
+
+### Documentation
+- Skill and README: `--limit` is at most 1,000, longer lists are paged with `--offset`; how to continue an export that
+  ended with an error.
+
+### Fixed
+- A single provider read with the cache (sitemaps) asked Google twice on a cache miss, the first time outside the
+  call budget: the cache is now read like the batches read it, and only the counted call goes out.
+  `loadSingleAnswer()` returns the provider calls it made.
+
 ## 0.1.0-rc.3
 
 Search performance.

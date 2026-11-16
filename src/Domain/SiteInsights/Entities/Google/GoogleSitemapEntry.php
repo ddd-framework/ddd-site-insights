@@ -34,6 +34,9 @@ class GoogleSitemapEntry extends ValueObject
     /** @var DateTime|null When Google last downloaded the file */
     public ?DateTime $lastDownloaded;
 
+    /** @var GoogleSitemapContents|null Google's `contents`: URLs submitted per content type; unset when Google sent none */
+    public ?GoogleSitemapContents $contents;
+
     public function uniqueKey(): string
     {
         return static::uniqueKeyStatic(hash('sha256', $this->path ?? ''));

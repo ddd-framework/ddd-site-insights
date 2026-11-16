@@ -14,7 +14,10 @@ use DDD\Domain\SiteInsights\Services\GoogleApiRequestsService;
 use DDD\Infrastructure\Base\DateTime\DateTime;
 use DDD\Infrastructure\Services\DDDService;
 
-/** Inspects one URL; a single load, cached in Redis (`cache.inspectionTtlSeconds`) */
+/**
+ * Inspects one URL, cached in Redis (`cache.inspectionTtlSeconds`): a single load (access check) or a child of an
+ * {@see ArgusGoogleUrlInspections} batch.
+ */
 #[ArgusLoad(
     loadEndpoint: 'POST:https://searchconsole.googleapis.com/v1/urlInspection/index:inspect',
     cacheLevel: ArgusCache::CACHELEVEL_DB,
@@ -25,8 +28,18 @@ class ArgusGoogleUrlInspection extends GoogleUrlInspection
 {
     use ArgusTrait;
 
+    /** @var int Calls built for this inspection in this process (retries included); never serialised */
+    protected int $providerCallAttempts = 0;
+
+    /** @return int calls built for this inspection in this process (0 for an answer from the cache) */
+    public function getProviderCallAttempts(): int
+    {
+        return $this->providerCallAttempts;
+    }
+
     protected function getLoadPayload(): ?array
     {
+        $this->providerCallAttempts++;
         /** @var GoogleApiRequestsService $googleApiRequestsService */
         $googleApiRequestsService = DDDService::instance()->getService(GoogleApiRequestsService::class);
         return $googleApiRequestsService->buildPayload($this->credentialsEntryName, [], $this->buildRequestBody());
@@ -46,10 +59,16 @@ class ArgusGoogleUrlInspection extends GoogleUrlInspection
             $this->inspectionResultLink = $inspectionResult->inspectionResultLink;
         }
         if (is_object($indexStatusResult)) {
-            foreach (['verdict', 'coverageState', 'indexingState', 'robotsTxtState', 'pageFetchState', 'googleCanonical', 'userCanonical'] as $propertyName) {
+            foreach (['verdict', 'coverageState', 'indexingState', 'robotsTxtState', 'pageFetchState', 'googleCanonical', 'userCanonical', 'crawledAs'] as $propertyName) {
                 if (is_string($indexStatusResult->$propertyName ?? null)) {
                     $this->$propertyName = $indexStatusResult->$propertyName;
                 }
+            }
+            foreach (['sitemap' => 'sitemaps', 'referringUrls' => 'referringUrls'] as $providerFieldName => $propertyName) {
+                $this->$propertyName = array_values(array_filter(
+                    (array)($indexStatusResult->$providerFieldName ?? []),
+                    static fn (mixed $listedUrl): bool => is_string($listedUrl) && $listedUrl !== ''
+                ));
             }
             $lastCrawlTime = self::parseProviderTime($indexStatusResult->lastCrawlTime ?? null);
             if ($lastCrawlTime !== null) {

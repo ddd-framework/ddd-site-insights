@@ -9,6 +9,8 @@ use DDD\Domain\Base\Repo\Argus\Traits\ArgusTrait;
 use DDD\Domain\Base\Repo\Argus\Utils\ArgusApiOperation;
 use DDD\Domain\Base\Repo\Argus\Utils\ArgusCache;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleApiFailure;
+use DDD\Domain\SiteInsights\Entities\Google\GoogleSitemapContent;
+use DDD\Domain\SiteInsights\Entities\Google\GoogleSitemapContents;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleSitemapEntries;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleSitemapEntry;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleSitemaps;
@@ -64,9 +66,35 @@ class ArgusGoogleSitemaps extends GoogleSitemaps
             if ($lastDownloaded !== null) {
                 $googleSitemapEntry->lastDownloaded = $lastDownloaded;
             }
+            $googleSitemapContents = $this->mapSitemapContents($sitemapData->contents ?? null);
+            if ($googleSitemapContents !== null) {
+                $googleSitemapEntry->contents = $googleSitemapContents;
+            }
             $this->sitemaps->add($googleSitemapEntry);
         }
         $this->fetchedAt = DateTime::fromTimestamp(time());
         $this->postProcessLoadResponse($callResponseData, true);
+    }
+
+    /**
+     * @param mixed $contentsData Google's `contents` of one file
+     * @return GoogleSitemapContents|null the content types with their submitted counts; null when Google sent none
+     */
+    protected function mapSitemapContents(mixed $contentsData): ?GoogleSitemapContents
+    {
+        if (!is_array($contentsData) || !$contentsData) {
+            return null;
+        }
+        $googleSitemapContents = new GoogleSitemapContents();
+        foreach ($contentsData as $contentData) {
+            if (!is_object($contentData) || !is_string($contentData->type ?? null)) {
+                continue;
+            }
+            $googleSitemapContent = new GoogleSitemapContent();
+            $googleSitemapContent->type = $contentData->type;
+            $googleSitemapContent->submitted = (int)($contentData->submitted ?? 0);
+            $googleSitemapContents->add($googleSitemapContent);
+        }
+        return $googleSitemapContents;
     }
 }

@@ -6,6 +6,7 @@ namespace DDD\Symfony\Commands\SiteInsights;
 
 use DDD\Domain\Base\Entities\ObjectSet;
 use DDD\Domain\Common\Entities\Accounts\Account;
+use DDD\Domain\SiteInsights\Entities\Indexing\IndexingCoverage;
 use DDD\Domain\SiteInsights\Entities\Search\SearchComparisonWindow;
 use DDD\Domain\SiteInsights\Entities\Search\SearchListRequest;
 use DDD\Domain\SiteInsights\Entities\Search\SearchMetricsComparison;
@@ -355,6 +356,23 @@ abstract class SiteInsightsCommand extends Command
             $coverageNoteLines[] = $searchRowsCoverage->counterpartsNotRequested . ' rows have no counterpart asked (counterpart limits).';
         }
         return $coverageNoteLines;
+    }
+
+    /**
+     * @param IndexingCoverage $indexingCoverage
+     * @return string what an indexing answer covers, in one line
+     */
+    protected function buildIndexingCoverageNote(IndexingCoverage $indexingCoverage): string
+    {
+        return sprintf(
+            '%d part(s) asked, %d from the cache, %d failed, %d provider call(s)%s; answers are kept %d s',
+            $indexingCoverage->requestedParts,
+            $indexingCoverage->partsFromCache,
+            $indexingCoverage->failedParts,
+            $indexingCoverage->providerCalls,
+            isset($indexingCoverage->fetchedAt) ? ', answered ' . gmdate('Y-m-d H:i', $indexingCoverage->fetchedAt->getTimestamp()) . ' UTC' : '',
+            $indexingCoverage->cacheLifetimeSeconds
+        );
     }
 
     /**

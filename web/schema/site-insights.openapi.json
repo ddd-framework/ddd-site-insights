@@ -1717,6 +1717,139 @@
                     "SiteInsights"
                 ]
             }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/indexing/sitemaps": {
+            "get": {
+                "summary": "SiteInsights Indexing Sitemaps",
+                "description": "The sitemap files of the site's property: submitted URLs per content type, errors, warnings, last submitted and\nlast downloaded, with coverage or the list's error.",
+                "parameters": [
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsIndexingSitemapsGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/indexing/inspections": {
+            "post": {
+                "summary": "SiteInsights Indexing Inspections",
+                "description": "Inspects up to `budgets.maxInspectionUrls` URLs of the site (body `urls`, optional `languageCode`): the index\nstate of each, cached a day per URL, or the URL's own error. A POST: every inspection not answered from the\ncache counts against the daily inspection quota.",
+                "parameters": [
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
         }
     },
     "components": {
@@ -2464,6 +2597,39 @@
                         "default": false,
                         "description": "Whether asking again later may succeed"
                     },
+                    "attempts": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "How often the part was asked before it was given up (set by the export, retries included)"
+                    },
+                    "transportFailure": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTransportFailure"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchTransportFailure": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "description": "timeout or endedBeforeTimeout"
+                    },
+                    "elapsedMilliseconds": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "How long the failed call round took"
+                    },
+                    "timeoutSeconds": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "The timeout of the call (budgets.batchTimeoutSeconds)"
+                    },
                     "objectType": {
                         "type": "string",
                         "nullable": true,
@@ -2834,6 +3000,373 @@
                         "description": "The fully qualified class name of the object"
                     }
                 }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsIndexingSitemapsGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "sitemapStatuses": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapStatuses"
+                    }
+                },
+                "required": [
+                    "sitemapStatuses"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.SitemapStatuses": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Provider key, e.g. google-search-console"
+                    },
+                    "property": {
+                        "type": "string",
+                        "description": "The property the files belong to"
+                    },
+                    "coverage": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.IndexingCoverage"
+                    },
+                    "error": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapStatus"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.IndexingCoverage": {
+                "type": "object",
+                "properties": {
+                    "requestedParts": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Parts asked: 1 for the sitemaps list, the distinct URLs of an inspection request"
+                    },
+                    "partsFromCache": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Parts answered from the cache (no provider call, no quota counted)"
+                    },
+                    "failedParts": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Parts that carry an error instead of an answer"
+                    },
+                    "providerCalls": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Provider calls made (retries included, cache hits not counted)"
+                    },
+                    "inspectionsCounted": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Calls counted against the provider's daily URL inspection quota by this request (0 for sitemaps)"
+                    },
+                    "fromCache": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether every answered part came from the cache"
+                    },
+                    "fetchedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the provider answered (the oldest answered part)"
+                    },
+                    "cacheLifetimeSeconds": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "How long an answer is served from the cache (cache.sitemapsTtlSeconds or cache.inspectionTtlSeconds)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.SitemapStatus": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "URL of the sitemap file"
+                    },
+                    "type": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The provider's type of the file (sitemap, rssFeed, atomFeed, urlList, …)"
+                    },
+                    "isIndex": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the file is a sitemap index"
+                    },
+                    "isPending": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the provider has not processed the file yet"
+                    },
+                    "lastSubmitted": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the file was last submitted (unset when it was found, not submitted)"
+                    },
+                    "lastDownloaded": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the provider last downloaded the file"
+                    },
+                    "warnings": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Warnings the provider reported for the file"
+                    },
+                    "errors": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Errors the provider reported for the file"
+                    },
+                    "submitted": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "URLs submitted in the file, over every content type"
+                    },
+                    "submittedByType": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapContentCounts"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.SitemapContentCounts": {
+                "type": "object",
+                "properties": {
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapContentCount"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.SitemapContentCount": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "The provider's content type (web, image, video, news, …)"
+                    },
+                    "submitted": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "URLs of this type submitted in the file"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostRequestDto": {
+                "type": "object",
+                "properties": {
+                    "urls": {
+                        "type": "array",
+                        "default": [],
+                        "description": "URLs of the site's property, 1 to budgets.maxInspectionUrls (default 20; more are refused with 400), each at most 2048 characters",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "languageCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Language of the provider's texts, e.g. en or en-US"
+                    }
+                },
+                "required": [
+                    "urls"
+                ]
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostResponseDto": {
+                "type": "object",
+                "properties": {
+                    "urlIndexInspections": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.UrlIndexInspections"
+                    }
+                },
+                "required": [
+                    "urlIndexInspections"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.UrlIndexInspections": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Provider key, e.g. google-search-console"
+                    },
+                    "property": {
+                        "type": "string",
+                        "description": "The property the URLs were inspected in"
+                    },
+                    "languageCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Language of the provider's texts, as asked (e.g. en-US)"
+                    },
+                    "duplicateUrlsDropped": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "URLs given more than once and inspected once"
+                    },
+                    "inspectionCounterScope": {
+                        "type": "string",
+                        "description": "shared, perPod or notCounted: how the inspection counters are kept (see the module skill)"
+                    },
+                    "coverage": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.IndexingCoverage"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.UrlIndexInspection"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Indexing.UrlIndexInspection": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL as asked"
+                    },
+                    "verdict": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "PASS, PARTIAL, FAIL, NEUTRAL or VERDICT_UNSPECIFIED"
+                    },
+                    "coverageState": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The provider's coverage state text, e.g. \"Submitted and indexed\""
+                    },
+                    "indexingState": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "INDEXING_ALLOWED, BLOCKED_BY_META_TAG, BLOCKED_BY_HTTP_HEADER, BLOCKED_BY_ROBOTS_TXT, …"
+                    },
+                    "robotsTxtState": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "ALLOWED, DISALLOWED or ROBOTS_TXT_STATE_UNSPECIFIED"
+                    },
+                    "pageFetchState": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "SUCCESSFUL, SOFT_404, BLOCKED_ROBOTS_TXT, NOT_FOUND, ACCESS_DENIED, SERVER_ERROR, …"
+                    },
+                    "lastCrawlTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the provider last crawled the URL"
+                    },
+                    "crawledAs": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "MOBILE or DESKTOP: the user agent of the last crawl"
+                    },
+                    "googleCanonical": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The canonical the provider chose"
+                    },
+                    "userCanonical": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The canonical the page declares"
+                    },
+                    "sitemaps": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Sitemap files that list the URL, as the provider knows them",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "referringUrls": {
+                        "type": "array",
+                        "default": [],
+                        "description": "URLs the provider knows linking to the URL",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "inspectionResultLink": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Link to the inspection in Search Console"
+                    },
+                    "inspectedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the provider answered this inspection"
+                    },
+                    "fromCache": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the answer came from the cache (no inspection was counted for it)"
+                    },
+                    "error": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
             }
         }
     },
@@ -2849,6 +3382,10 @@
         {
             "name": "ExceptionDetails",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Infrastructure.Exceptions.ExceptionDetails\" />"
+        },
+        {
+            "name": "IndexingCoverage",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.IndexingCoverage\" />"
         },
         {
             "name": "InsightsPageGroup",
@@ -2923,6 +3460,10 @@
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTotals\" />"
         },
         {
+            "name": "SearchTransportFailure",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTransportFailure\" />"
+        },
+        {
             "name": "SearchWindow",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow\" />"
         },
@@ -2941,6 +3482,18 @@
         {
             "name": "SiteInsightsAccessChecksGetResponseDto",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsAccessChecksGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsIndexingSitemapsGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsIndexingSitemapsGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsInspectionsPostRequestDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostRequestDto\" />"
+        },
+        {
+            "name": "SiteInsightsInspectionsPostResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsInspectionsPostResponseDto\" />"
         },
         {
             "name": "SiteInsightsSearchOverviewGetResponseDto",
@@ -2965,6 +3518,30 @@
         {
             "name": "SiteInsightsSitesGetResponseDto",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSitesGetResponseDto\" />"
+        },
+        {
+            "name": "SitemapContentCount",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapContentCount\" />"
+        },
+        {
+            "name": "SitemapContentCounts",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapContentCounts\" />"
+        },
+        {
+            "name": "SitemapStatus",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapStatus\" />"
+        },
+        {
+            "name": "SitemapStatuses",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.SitemapStatuses\" />"
+        },
+        {
+            "name": "UrlIndexInspection",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.UrlIndexInspection\" />"
+        },
+        {
+            "name": "UrlIndexInspections",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Indexing.UrlIndexInspections\" />"
         },
         {
             "name": "ValidationError",
@@ -3012,6 +3589,7 @@
                 "SearchMetricsComparison",
                 "SearchMetrics",
                 "SearchPartError",
+                "SearchTransportFailure",
                 "SearchRowsCoverage",
                 "SearchPerformanceRows",
                 "SearchPerformanceRow",
@@ -3022,7 +3600,17 @@
                 "SiteInsightsSearchPageDetailGetResponseDto",
                 "SearchPageDetail",
                 "SiteInsightsSearchQueryDetailGetResponseDto",
-                "SearchQueryDetail"
+                "SearchQueryDetail",
+                "SiteInsightsIndexingSitemapsGetResponseDto",
+                "SitemapStatuses",
+                "IndexingCoverage",
+                "SitemapStatus",
+                "SitemapContentCounts",
+                "SitemapContentCount",
+                "SiteInsightsInspectionsPostRequestDto",
+                "SiteInsightsInspectionsPostResponseDto",
+                "UrlIndexInspections",
+                "UrlIndexInspection"
             ]
         }
     ]

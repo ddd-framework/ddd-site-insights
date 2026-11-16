@@ -8,6 +8,8 @@ import { GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg } from "./models/
 import { GetAdminSiteInsightsSitesSearchPageGroupsBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchPageGroupsBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchPageDetailBySiteKeyApiArg";
 import { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg";
+import { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg } from "./models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg";
+import { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg } from "./models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg";
 
 export const siteInsightsApiRequests = {
   getAdminSiteInsightsSites: (): string | FetchArgs => ({
@@ -185,6 +187,26 @@ export const siteInsightsApiRequests = {
       compare: queryArg.compare,
       searchType: queryArg.searchType,
       dataState: queryArg.dataState,
+      noCache: queryArg.noCache,
+      outputFormat: queryArg.outputFormat,
+    },
+  }),
+  getAdminSiteInsightsSitesIndexingSitemapsBySiteKey: (
+    queryArg: GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg,
+  ): string | FetchArgs => ({
+    url: `/api/admin/siteInsights/sites/${encodeURIComponent(String(queryArg.siteKey))}/indexing/sitemaps`,
+    params: {
+      noCache: queryArg.noCache,
+      outputFormat: queryArg.outputFormat,
+    },
+  }),
+  postAdminSiteInsightsSitesIndexingInspectionsBySiteKey: (
+    queryArg: PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg,
+  ): string | FetchArgs => ({
+    url: `/api/admin/siteInsights/sites/${encodeURIComponent(String(queryArg.siteKey))}/indexing/inspections`,
+    method: "POST",
+    body: queryArg.dddPresentationApiAdminSiteInsightsDtosSiteInsightsInspectionsPostRequestDto,
+    params: {
       noCache: queryArg.noCache,
       outputFormat: queryArg.outputFormat,
     },

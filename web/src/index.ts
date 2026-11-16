@@ -48,6 +48,13 @@ export {
 // generated from schema/site-insights.openapi.json (do not edit the generated files; run `pnpm generate`)
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Access/SiteInsightsAccessCheck';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Access/SiteInsightsAccessChecks';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/IndexingCoverage';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/SitemapContentCount';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/SitemapContentCounts';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/SitemapStatus';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/SitemapStatuses';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/UrlIndexInspection';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Indexing/UrlIndexInspections';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchComparisonWindow';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchMetrics';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchMetricsComparison';
@@ -61,6 +68,7 @@ export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/S
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchQueryDetail';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchRowsCoverage';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchTotals';
+export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchTransportFailure';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Search/SearchWindow';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Sites/InsightsPageGroup';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Sites/InsightsPageGroups';
@@ -68,6 +76,9 @@ export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Sites/In
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Sites/InsightsSite';
 export type * from './generated/models/DDD/Domain/SiteInsights/Entities/Sites/InsightsSites';
 export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsAccessChecksGetResponseDto';
+export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsIndexingSitemapsGetResponseDto';
+export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsInspectionsPostRequestDto';
+export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsInspectionsPostResponseDto';
 export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsSearchOverviewGetResponseDto';
 export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsSearchPageDetailGetResponseDto';
 export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsSearchPageGroupsGetResponseDto';
@@ -76,6 +87,8 @@ export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/D
 export type * from './generated/models/DDD/Presentation/Api/Admin/SiteInsights/Dtos/SiteInsightsSitesGetResponseDto';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesApiArg';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesApiResponse';
+export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg';
+export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiArg';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiResponse';
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg';
@@ -94,3 +107,5 @@ export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesSearc
 export type * from './generated/models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse';
 export type * from './generated/models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg';
 export type * from './generated/models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse';
+export type * from './generated/models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg';
+export type * from './generated/models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse';

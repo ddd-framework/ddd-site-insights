@@ -23,6 +23,12 @@ class SearchPartError extends ValueObject
     /** @var bool Whether asking again later may succeed */
     public bool $retryable = false;
 
+    /** @var int|null How often the part was asked before it was given up (set by the export, retries included) */
+    public ?int $attempts;
+
+    /** @var SearchTransportFailure|null Set for cause transport where the module measured the failed call (the export) */
+    public ?SearchTransportFailure $transportFailure;
+
     /**
      * @param SiteInsightsErrorCause $siteInsightsErrorCause
      * @param string $message

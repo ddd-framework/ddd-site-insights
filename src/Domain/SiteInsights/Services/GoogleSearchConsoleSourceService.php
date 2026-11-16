@@ -16,6 +16,13 @@ use DDD\Domain\SiteInsights\Entities\Google\GoogleSite;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleSitemaps;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleSites;
 use DDD\Domain\SiteInsights\Entities\Google\GoogleUrlInspection;
+use DDD\Domain\SiteInsights\Entities\Indexing\IndexingCoverage;
+use DDD\Domain\SiteInsights\Entities\Indexing\SitemapContentCount;
+use DDD\Domain\SiteInsights\Entities\Indexing\SitemapContentCounts;
+use DDD\Domain\SiteInsights\Entities\Indexing\SitemapStatus;
+use DDD\Domain\SiteInsights\Entities\Indexing\SitemapStatuses;
+use DDD\Domain\SiteInsights\Entities\Indexing\UrlIndexInspection;
+use DDD\Domain\SiteInsights\Entities\Indexing\UrlIndexInspections;
 use DDD\Domain\SiteInsights\Entities\Search\SearchDataAvailability;
 use DDD\Domain\SiteInsights\Entities\Search\SearchMetrics;
 use DDD\Domain\SiteInsights\Entities\Search\SearchPartError;
@@ -38,7 +45,9 @@ use DDD\Domain\SiteInsights\Repo\Argus\Google\ArgusGoogleSite;
 use DDD\Domain\SiteInsights\Repo\Argus\Google\ArgusGoogleSitemaps;
 use DDD\Domain\SiteInsights\Repo\Argus\Google\ArgusGoogleSites;
 use DDD\Domain\SiteInsights\Repo\Argus\Google\ArgusGoogleUrlInspection;
+use DDD\Domain\SiteInsights\Repo\Argus\Google\ArgusGoogleUrlInspections;
 use DDD\Domain\SiteInsights\Utils\SearchDays;
+use DDD\Infrastructure\Base\DateTime\DateTime;
 use DDD\Infrastructure\Exceptions\BadRequestException;
 use DDD\Infrastructure\Services\DDDService;
 use RuntimeException;
@@ -376,13 +385,14 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
      */
     public function loadSitemaps(InsightsSite $insightsSite, bool $useCache = true): GoogleSitemaps
     {
-        $argusGoogleSitemaps = new ArgusGoogleSitemaps();
-        $argusGoogleSitemaps->credentialsEntryName = $insightsSite->credentialsEntryName;
-        $argusGoogleSitemaps->credentialsRevision = $insightsSite->credentialsRevision;
-        $argusGoogleSitemaps->siteUrl = $insightsSite->property;
-        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheConfig()->sitemapsTtlSeconds;
-        $argusGoogleSitemaps->getArgusSettings()->argusLoad->cacheTtl = $lifetimeSeconds;
-        $this->loadSingleAnswer($insightsSite, $argusGoogleSitemaps, SiteInsightsProviderBudgetsService::QUOTA_OTHER, $useCache, $lifetimeSeconds);
+        $argusGoogleSitemaps = $this->buildArgusSitemaps($insightsSite);
+        $this->loadSingleAnswer(
+            $insightsSite,
+            $argusGoogleSitemaps,
+            SiteInsightsProviderBudgetsService::QUOTA_OTHER,
+            $useCache,
+            $this->getSiteInsightsConfigService()->getCacheConfig()->sitemapsTtlSeconds
+        );
         return $argusGoogleSitemaps;
     }
 
@@ -396,6 +406,255 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
      */
     public function inspectUrl(InsightsSite $insightsSite, string $inspectionUrl, ?string $languageCode = null, bool $useCache = true): GoogleUrlInspection
     {
+        $argusGoogleUrlInspection = $this->buildArgusUrlInspection($insightsSite, $inspectionUrl, $languageCode);
+        $this->loadSingleAnswer(
+            $insightsSite,
+            $argusGoogleUrlInspection,
+            SiteInsightsProviderBudgetsService::QUOTA_INSPECTION,
+            $useCache,
+            $this->getSiteInsightsConfigService()->getCacheConfig()->inspectionTtlSeconds
+        );
+        return $argusGoogleUrlInspection;
+    }
+
+    /**
+     * @throws SiteInsightsProviderUnavailableException when no token can be obtained (nothing is sent)
+     */
+    public function loadSitemapStatuses(InsightsSite $insightsSite): SitemapStatuses
+    {
+        $argusGoogleSitemaps = $this->buildArgusSitemaps($insightsSite);
+        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheConfig()->sitemapsTtlSeconds;
+        $providerCalls = $this->loadSingleAnswer($insightsSite, $argusGoogleSitemaps, SiteInsightsProviderBudgetsService::QUOTA_OTHER, true, $lifetimeSeconds);
+        $fromCache = $providerCalls === 0 && $argusGoogleSitemaps->getArgusSettings()->loadedFromCache && $argusGoogleSitemaps->hasAnswer();
+        return $this->mapSitemaps($argusGoogleSitemaps, $insightsSite, $fromCache, $providerCalls, $lifetimeSeconds);
+    }
+
+    /**
+     * Distinct URLs in one call round in settle mode: cache hits first (the module's own freshness check), questions
+     * another process is already asking are joined, the rest is reserved against the inspection quota in one step and
+     * asked together. A refused reservation fails those URLs with `budgetRefused` and asks nothing.
+     *
+     * @throws SiteInsightsProviderUnavailableException when no token can be obtained (nothing is sent)
+     */
+    public function inspectUrls(InsightsSite $insightsSite, array $inspectionUrls, ?string $languageCode = null, bool $useCache = true): UrlIndexInspections
+    {
+        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheConfig()->inspectionTtlSeconds;
+        // method-local maps by URL: the Argus inspections, which came from the cache, which are to be asked
+        $argusInspectionsByUrl = [];
+        $cacheLevelsByCacheKey = [];
+        $cacheTtlsByCacheKey = [];
+        foreach ($inspectionUrls as $inspectionUrl) {
+            $inspectionUrl = (string)$inspectionUrl;
+            if (isset($argusInspectionsByUrl[$inspectionUrl])) {
+                continue;
+            }
+            $argusGoogleUrlInspection = $this->buildArgusUrlInspection($insightsSite, $inspectionUrl, $languageCode);
+            $argusInspectionsByUrl[$inspectionUrl] = $argusGoogleUrlInspection;
+            $cacheLevelsByCacheKey[$argusGoogleUrlInspection->cacheKey()] = $argusGoogleUrlInspection->getArgusSettings()->argusLoad->cacheLevel;
+            $cacheTtlsByCacheKey[$argusGoogleUrlInspection->cacheKey()] = $lifetimeSeconds;
+        }
+        $cachedEntriesByCacheKey = $useCache ? $this->readCachedEntries($cacheLevelsByCacheKey, $cacheTtlsByCacheKey) : [];
+        $answeredInspectionsByUrl = [];
+        $answeredFromCacheByUrl = [];
+        $argusInspectionsToAskByUrl = [];
+        $inFlightComputations = [];
+        foreach ($argusInspectionsByUrl as $inspectionUrl => $argusGoogleUrlInspection) {
+            $inspectionUrl = (string)$inspectionUrl;
+            if (!$useCache) {
+                $argusInspectionsToAskByUrl[$inspectionUrl] = $argusGoogleUrlInspection;
+                continue;
+            }
+            $cacheKey = $argusGoogleUrlInspection->cacheKey();
+            $cachedInspection = $this->hydrateFreshCachedInspection($insightsSite, $inspectionUrl, $languageCode, $cachedEntriesByCacheKey[$cacheKey] ?? null, $lifetimeSeconds);
+            if ($cachedInspection !== null) {
+                $answeredInspectionsByUrl[$inspectionUrl] = $cachedInspection;
+                $answeredFromCacheByUrl[$inspectionUrl] = true;
+                continue;
+            }
+            $argusCacheInFlightComputation = new ArgusCacheInFlightComputation($cacheKey);
+            if (isset($cachedEntriesByCacheKey[$cacheKey])) {
+                // a stale entry exists: joining would only find it again
+                $argusCacheInFlightComputation->claimComputation();
+            } elseif (!$argusCacheInFlightComputation->joinPendingComputationOrClaim($this->getSiteInsightsConfigService()->getCacheConfig()->joinWaitMilliseconds)) {
+                // another process wrote the entry meanwhile
+                $joinedEntries = $this->readCachedEntries([$cacheKey => $cacheLevelsByCacheKey[$cacheKey]], [$cacheKey => $lifetimeSeconds]);
+                $joinedInspection = $this->hydrateFreshCachedInspection($insightsSite, $inspectionUrl, $languageCode, $joinedEntries[$cacheKey] ?? null, $lifetimeSeconds);
+                if ($joinedInspection !== null) {
+                    $answeredInspectionsByUrl[$inspectionUrl] = $joinedInspection;
+                    $answeredFromCacheByUrl[$inspectionUrl] = true;
+                    continue;
+                }
+                $argusCacheInFlightComputation->claimComputation();
+            }
+            $inFlightComputations[] = $argusCacheInFlightComputation;
+            $argusInspectionsToAskByUrl[$inspectionUrl] = $argusGoogleUrlInspection;
+        }
+
+        $inspectionsCounted = 0;
+        try {
+            if ($argusInspectionsToAskByUrl) {
+                $argusGoogleUrlInspections = new ArgusGoogleUrlInspections();
+                foreach ($argusInspectionsToAskByUrl as $argusGoogleUrlInspection) {
+                    $argusGoogleUrlInspections->add($argusGoogleUrlInspection);
+                }
+                $inspectionsCounted += $this->loadInspectionBatch($insightsSite, $argusGoogleUrlInspections);
+                $inspectionsCounted += $this->retryUnauthorizedInspections($insightsSite, $argusGoogleUrlInspections);
+                $answeredInspectionsByUrl += $argusInspectionsToAskByUrl;
+            }
+        } finally {
+            foreach ($inFlightComputations as $argusCacheInFlightComputation) {
+                $argusCacheInFlightComputation->releaseComputation();
+            }
+        }
+
+        $urlIndexInspections = new UrlIndexInspections();
+        $urlIndexInspections->siteKey = $insightsSite->key;
+        $urlIndexInspections->provider = self::PROVIDER;
+        $urlIndexInspections->property = $insightsSite->property;
+        if ($languageCode !== null) {
+            $urlIndexInspections->languageCode = $languageCode;
+        }
+        $indexingCoverage = new IndexingCoverage();
+        $indexingCoverage->cacheLifetimeSeconds = $lifetimeSeconds;
+        $indexingCoverage->inspectionsCounted = $inspectionsCounted;
+        foreach ($argusInspectionsByUrl as $inspectionUrl => $argusGoogleUrlInspection) {
+            $inspectionUrl = (string)$inspectionUrl;
+            $answeredInspection = $answeredInspectionsByUrl[$inspectionUrl];
+            $fromCache = $answeredFromCacheByUrl[$inspectionUrl] ?? false;
+            $urlIndexInspection = $this->mapUrlInspection($answeredInspection, $inspectionUrl, $fromCache);
+            $indexingCoverage->requestedParts++;
+            if ($fromCache) {
+                $indexingCoverage->partsFromCache++;
+            } elseif ($answeredInspection instanceof ArgusGoogleUrlInspection) {
+                $indexingCoverage->providerCalls += $answeredInspection->getProviderCallAttempts();
+            }
+            if (isset($urlIndexInspection->error)) {
+                $indexingCoverage->failedParts++;
+            } elseif (isset($urlIndexInspection->inspectedAt)) {
+                $indexingCoverage->addAnsweredAt($urlIndexInspection->inspectedAt);
+            }
+            $urlIndexInspections->add($urlIndexInspection);
+        }
+        $indexingCoverage->fromCache = $indexingCoverage->requestedParts > 0 && $indexingCoverage->partsFromCache === $indexingCoverage->requestedParts;
+        $urlIndexInspections->coverage = $indexingCoverage;
+        return $urlIndexInspections;
+    }
+
+    /**
+     * @param GoogleSitemaps $googleSitemaps
+     * @param InsightsSite $insightsSite
+     * @param bool $fromCache
+     * @param int $providerCalls
+     * @param int $lifetimeSeconds
+     * @return SitemapStatuses Google's files as neutral states (submitted counts summed per file), or the error
+     */
+    public function mapSitemaps(GoogleSitemaps $googleSitemaps, InsightsSite $insightsSite, bool $fromCache, int $providerCalls, int $lifetimeSeconds): SitemapStatuses
+    {
+        $sitemapStatuses = new SitemapStatuses();
+        $sitemapStatuses->siteKey = $insightsSite->key;
+        $sitemapStatuses->provider = self::PROVIDER;
+        $sitemapStatuses->property = $insightsSite->property;
+        $indexingCoverage = new IndexingCoverage();
+        $indexingCoverage->requestedParts = 1;
+        $indexingCoverage->providerCalls = $providerCalls;
+        $indexingCoverage->cacheLifetimeSeconds = $lifetimeSeconds;
+        $sitemapStatuses->coverage = $indexingCoverage;
+        if (isset($googleSitemaps->failure) || !$googleSitemaps->hasAnswer()) {
+            $indexingCoverage->failedParts = 1;
+            $sitemapStatuses->error = $this->createPartError($googleSitemaps->failure ?? null);
+            return $sitemapStatuses;
+        }
+        $indexingCoverage->fromCache = $fromCache;
+        $indexingCoverage->partsFromCache = $fromCache ? 1 : 0;
+        $indexingCoverage->addAnsweredAt($googleSitemaps->fetchedAt);
+        foreach (($googleSitemaps->sitemaps ?? null)?->getElements() ?? [] as $googleSitemapEntry) {
+            $sitemapStatus = new SitemapStatus();
+            $sitemapStatus->path = $googleSitemapEntry->path;
+            if (isset($googleSitemapEntry->type)) {
+                $sitemapStatus->type = $googleSitemapEntry->type;
+            }
+            $sitemapStatus->isIndex = $googleSitemapEntry->isSitemapsIndex;
+            $sitemapStatus->isPending = $googleSitemapEntry->isPending;
+            if (isset($googleSitemapEntry->lastSubmitted)) {
+                $sitemapStatus->lastSubmitted = $googleSitemapEntry->lastSubmitted;
+            }
+            if (isset($googleSitemapEntry->lastDownloaded)) {
+                $sitemapStatus->lastDownloaded = $googleSitemapEntry->lastDownloaded;
+            }
+            $sitemapStatus->warnings = $googleSitemapEntry->warnings;
+            $sitemapStatus->errors = $googleSitemapEntry->errors;
+            $sitemapStatus->submittedByType = new SitemapContentCounts();
+            foreach (($googleSitemapEntry->contents ?? null)?->getElements() ?? [] as $googleSitemapContent) {
+                $sitemapContentCount = new SitemapContentCount();
+                $sitemapContentCount->type = $googleSitemapContent->type;
+                $sitemapContentCount->submitted = $googleSitemapContent->submitted;
+                $sitemapStatus->submittedByType->add($sitemapContentCount);
+                $sitemapStatus->submitted += $googleSitemapContent->submitted;
+            }
+            $sitemapStatuses->add($sitemapStatus);
+        }
+        return $sitemapStatuses;
+    }
+
+    /**
+     * @param GoogleUrlInspection $googleUrlInspection
+     * @param string $inspectionUrl the URL as asked
+     * @param bool $fromCache
+     * @return UrlIndexInspection Google's index state as a neutral one, or the URL's error
+     */
+    public function mapUrlInspection(GoogleUrlInspection $googleUrlInspection, string $inspectionUrl, bool $fromCache): UrlIndexInspection
+    {
+        if (isset($googleUrlInspection->failure) || !$googleUrlInspection->hasAnswer()) {
+            return UrlIndexInspection::createFailed($inspectionUrl, $this->createPartError($googleUrlInspection->failure ?? null));
+        }
+        $urlIndexInspection = new UrlIndexInspection();
+        $urlIndexInspection->url = $inspectionUrl;
+        foreach (['verdict', 'coverageState', 'indexingState', 'robotsTxtState', 'pageFetchState', 'lastCrawlTime', 'crawledAs', 'googleCanonical', 'userCanonical', 'inspectionResultLink'] as $propertyName) {
+            if (isset($googleUrlInspection->$propertyName)) {
+                $urlIndexInspection->$propertyName = $googleUrlInspection->$propertyName;
+            }
+        }
+        $urlIndexInspection->sitemaps = $googleUrlInspection->sitemaps;
+        $urlIndexInspection->referringUrls = $googleUrlInspection->referringUrls;
+        $urlIndexInspection->inspectedAt = $googleUrlInspection->fetchedAt;
+        $urlIndexInspection->fromCache = $fromCache;
+        return $urlIndexInspection;
+    }
+
+    /**
+     * @param GoogleApiFailure|null $googleApiFailure
+     * @return SearchPartError the failure as a part error (providerFailed when Google gave no answer and no failure)
+     */
+    protected function createPartError(?GoogleApiFailure $googleApiFailure): SearchPartError
+    {
+        if ($googleApiFailure === null) {
+            return SearchPartError::create(SiteInsightsErrorCause::PROVIDER_FAILED, 'no answer');
+        }
+        return SearchPartError::create($googleApiFailure->getCause(), $googleApiFailure->message, $googleApiFailure->httpStatus ?? null);
+    }
+
+    /**
+     * @param InsightsSite $insightsSite
+     * @return ArgusGoogleSitemaps the sitemaps question with the configured lifetime
+     */
+    protected function buildArgusSitemaps(InsightsSite $insightsSite): ArgusGoogleSitemaps
+    {
+        $argusGoogleSitemaps = new ArgusGoogleSitemaps();
+        $argusGoogleSitemaps->credentialsEntryName = $insightsSite->credentialsEntryName;
+        $argusGoogleSitemaps->credentialsRevision = $insightsSite->credentialsRevision;
+        $argusGoogleSitemaps->siteUrl = $insightsSite->property;
+        $argusGoogleSitemaps->getArgusSettings()->argusLoad->cacheTtl = $this->getSiteInsightsConfigService()->getCacheConfig()->sitemapsTtlSeconds;
+        return $argusGoogleSitemaps;
+    }
+
+    /**
+     * @param InsightsSite $insightsSite
+     * @param string $inspectionUrl
+     * @param string|null $languageCode
+     * @return ArgusGoogleUrlInspection the inspection question with the configured lifetime
+     */
+    protected function buildArgusUrlInspection(InsightsSite $insightsSite, string $inspectionUrl, ?string $languageCode): ArgusGoogleUrlInspection
+    {
         $argusGoogleUrlInspection = new ArgusGoogleUrlInspection();
         $argusGoogleUrlInspection->credentialsEntryName = $insightsSite->credentialsEntryName;
         $argusGoogleUrlInspection->credentialsRevision = $insightsSite->credentialsRevision;
@@ -404,10 +663,135 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         if ($languageCode !== null) {
             $argusGoogleUrlInspection->languageCode = $languageCode;
         }
-        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheConfig()->inspectionTtlSeconds;
-        $argusGoogleUrlInspection->getArgusSettings()->argusLoad->cacheTtl = $lifetimeSeconds;
-        $this->loadSingleAnswer($insightsSite, $argusGoogleUrlInspection, SiteInsightsProviderBudgetsService::QUOTA_INSPECTION, $useCache, $lifetimeSeconds);
+        $argusGoogleUrlInspection->getArgusSettings()->argusLoad->cacheTtl = $this->getSiteInsightsConfigService()->getCacheConfig()->inspectionTtlSeconds;
         return $argusGoogleUrlInspection;
+    }
+
+    /**
+     * @param InsightsSite $insightsSite
+     * @param string $inspectionUrl
+     * @param string|null $languageCode
+     * @param string|null $cachedEntry
+     * @param int $lifetimeSeconds
+     * @return ArgusGoogleUrlInspection|null the cached inspection when it is an answer and younger than its lifetime,
+     *         else null (a miss)
+     */
+    protected function hydrateFreshCachedInspection(InsightsSite $insightsSite, string $inspectionUrl, ?string $languageCode, ?string $cachedEntry, int $lifetimeSeconds): ?ArgusGoogleUrlInspection
+    {
+        if ($cachedEntry === null || $cachedEntry === '') {
+            return null;
+        }
+        $argusGoogleUrlInspection = $this->buildArgusUrlInspection($insightsSite, $inspectionUrl, $languageCode);
+        $argusGoogleUrlInspection->argusLoadFromCache($cachedEntry);
+        if (!$argusGoogleUrlInspection->hasAnswer() || $argusGoogleUrlInspection->isOlderThan($lifetimeSeconds, $this->getFreshnessCheckTimestamp())) {
+            return null;
+        }
+        return $argusGoogleUrlInspection;
+    }
+
+    /**
+     * One call round of inspections in settle mode, reserved against the inspection quota in one step. When Argus
+     * throws for the whole batch, only the parts without an answer are asked once more alone (each reserved again);
+     * a part that fails again alone gets `answerUnreadable`.
+     *
+     * @param InsightsSite $insightsSite
+     * @param ArgusGoogleUrlInspections $argusGoogleUrlInspections
+     * @return int inspections reserved against the quota
+     * @throws SiteInsightsProviderUnavailableException when no token can be obtained
+     */
+    protected function loadInspectionBatch(InsightsSite $insightsSite, ArgusGoogleUrlInspections $argusGoogleUrlInspections): int
+    {
+        $partCount = count($argusGoogleUrlInspections->getElements());
+        if (!$this->reserveInspectionsOrMarkRefused($insightsSite, $argusGoogleUrlInspections, $partCount)) {
+            return 0;
+        }
+        $inspectionsReserved = $partCount;
+        try {
+            $this->executeInspectionBatchLoad($argusGoogleUrlInspections);
+        } catch (RuntimeException $runtimeException) {
+            foreach ($argusGoogleUrlInspections->getElements() as $argusGoogleUrlInspection) {
+                if ($argusGoogleUrlInspection->getArgusSettings()->isLoaded) {
+                    // answered (or failed on its own) before the batch threw: asking again would count it twice
+                    continue;
+                }
+                $singlePartBatch = new ArgusGoogleUrlInspections();
+                $singlePartBatch->add($argusGoogleUrlInspection);
+                if (!$this->reserveInspectionsOrMarkRefused($insightsSite, $singlePartBatch, 1)) {
+                    continue;
+                }
+                $inspectionsReserved++;
+                try {
+                    $this->executeInspectionBatchLoad($singlePartBatch);
+                } catch (RuntimeException $singlePartRuntimeException) {
+                    $argusGoogleUrlInspection->failure = $this->createFailure(
+                        SiteInsightsErrorCause::ANSWER_UNREADABLE,
+                        'the answer could not be read within its byte limit'
+                    );
+                }
+            }
+        }
+        return $inspectionsReserved;
+    }
+
+    /**
+     * After a 401 the cached token is dropped and the affected inspections are asked once more; a second 401 stays as
+     * the inspection's failure (`tokenRefused`).
+     *
+     * @param InsightsSite $insightsSite
+     * @param ArgusGoogleUrlInspections $argusGoogleUrlInspections
+     * @return int inspections reserved against the quota for the second round
+     * @throws SiteInsightsProviderUnavailableException
+     */
+    protected function retryUnauthorizedInspections(InsightsSite $insightsSite, ArgusGoogleUrlInspections $argusGoogleUrlInspections): int
+    {
+        $unauthorizedParts = new ArgusGoogleUrlInspections();
+        foreach ($argusGoogleUrlInspections->getElements() as $argusGoogleUrlInspection) {
+            if (($argusGoogleUrlInspection->failure->httpStatus ?? null) === 401) {
+                unset($argusGoogleUrlInspection->failure);
+                $argusGoogleUrlInspection->getArgusSettings()->isLoaded = false;
+                $unauthorizedParts->add($argusGoogleUrlInspection);
+            }
+        }
+        if (!count($unauthorizedParts->getElements())) {
+            return 0;
+        }
+        $this->getSiteInsightsCredentialsProviderService()->forgetAccessToken($insightsSite->credentialsEntryName);
+        return $this->loadInspectionBatch($insightsSite, $unauthorizedParts);
+    }
+
+    /**
+     * @param ArgusGoogleUrlInspections $argusGoogleUrlInspections
+     * @return void
+     */
+    protected function executeInspectionBatchLoad(ArgusGoogleUrlInspections $argusGoogleUrlInspections): void
+    {
+        $argusGoogleUrlInspections->setPropertiesToLoad(ArgusGoogleUrlInspection::class);
+        $argusSettings = $argusGoogleUrlInspections->getArgusSettings();
+        $argusSettings->keepFulfilledCallsWhenOneIsRejected = true;
+        $argusSettings->timeout = (float)$this->getSiteInsightsConfigService()->getBudgetsConfig()->batchTimeoutSeconds;
+        $argusGoogleUrlInspections->argusLoad(useArgusEntityCache: false, autoloadCurrentObject: false);
+    }
+
+    /**
+     * @param InsightsSite $insightsSite
+     * @param ArgusGoogleUrlInspections $argusGoogleUrlInspections
+     * @param int $inspections
+     * @return bool false: the inspection budget refused them and every part carries `budgetRefused`
+     */
+    protected function reserveInspectionsOrMarkRefused(InsightsSite $insightsSite, ArgusGoogleUrlInspections $argusGoogleUrlInspections, int $inspections): bool
+    {
+        try {
+            $this->getSiteInsightsProviderBudgetsService()->reserve($insightsSite, SiteInsightsProviderBudgetsService::QUOTA_INSPECTION, $inspections);
+        } catch (SiteInsightsBudgetExceededException $siteInsightsBudgetExceededException) {
+            foreach ($argusGoogleUrlInspections->getElements() as $argusGoogleUrlInspection) {
+                $argusGoogleUrlInspection->failure = $this->createFailure(
+                    SiteInsightsErrorCause::BUDGET_REFUSED,
+                    $siteInsightsBudgetExceededException->getMessage()
+                );
+            }
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -517,45 +901,55 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
      * @param string $quotaKind
      * @param bool $useCache
      * @param int $lifetimeSeconds the module's own freshness limit of a cache hit (0: no cache)
-     * @return void
+     * @return int provider calls made (0 for a fresh cache hit or a refused budget)
      * @throws SiteInsightsProviderUnavailableException when no token can be obtained
      */
-    protected function loadSingleAnswer(InsightsSite $insightsSite, GoogleProviderAnswer $argusAnswer, string $quotaKind, bool $useCache, int $lifetimeSeconds): void
+    protected function loadSingleAnswer(InsightsSite $insightsSite, GoogleProviderAnswer $argusAnswer, string $quotaKind, bool $useCache, int $lifetimeSeconds): int
     {
         /** @var ArgusGoogleSites|ArgusGoogleSite|ArgusGoogleSitemaps|ArgusGoogleUrlInspection $argusAnswer */
         $argusSettings = $argusAnswer->getArgusSettings();
         $argusSettings->keepFulfilledCallsWhenOneIsRejected = true;
         $argusSettings->timeout = (float)$this->getSiteInsightsConfigService()->getBudgetsConfig()->singleCallTimeoutSeconds;
         if ($useCache) {
-            $argusAnswer->argusLoad(useArgusEntityCache: true);
-            if ($argusSettings->loadedFromCache && $argusAnswer->hasAnswer() && !$argusAnswer->isOlderThan($lifetimeSeconds, $this->getFreshnessCheckTimestamp())) {
-                return;
+            // the cache is read like the batches read it: an Argus load with its entity cache would ask the provider
+            // on a miss, outside the budget, before the counted call below
+            $cacheKey = $argusAnswer->cacheKey();
+            $cachedEntries = $this->readCachedEntries([$cacheKey => $argusSettings->argusLoad->cacheLevel], [$cacheKey => $lifetimeSeconds]);
+            $cachedEntry = $cachedEntries[$cacheKey] ?? null;
+            if ($cachedEntry !== null) {
+                $argusAnswerClass = $argusAnswer::class;
+                $cachedAnswer = new $argusAnswerClass();
+                $cachedAnswer->argusLoadFromCache($cachedEntry);
+                if ($cachedAnswer->hasAnswer() && !$cachedAnswer->isOlderThan($lifetimeSeconds, $this->getFreshnessCheckTimestamp())) {
+                    $argusAnswer->argusLoadFromCache($cachedEntry);
+                    return 0;
+                }
             }
-            $argusSettings->loadedFromCache = false;
-            $argusSettings->isLoaded = false;
-            unset($argusAnswer->failure);
         }
+        $providerCalls = 0;
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             try {
                 $this->getSiteInsightsProviderBudgetsService()->reserve($insightsSite, $quotaKind, 1);
             } catch (SiteInsightsBudgetExceededException $siteInsightsBudgetExceededException) {
                 $argusAnswer->failure = $this->createFailure(SiteInsightsErrorCause::BUDGET_REFUSED, $siteInsightsBudgetExceededException->getMessage());
-                return;
+                return $providerCalls;
             }
+            $providerCalls++;
             $argusSettings->isLoaded = false;
             try {
                 $argusAnswer->argusLoad(useArgusEntityCache: false);
             } catch (RuntimeException $runtimeException) {
                 $argusAnswer->failure = $this->createFailure(SiteInsightsErrorCause::ANSWER_UNREADABLE, 'the answer could not be read within its byte limit');
-                return;
+                return $providerCalls;
             }
             if ($attempt === 1 && ($argusAnswer->failure->httpStatus ?? null) === 401) {
                 unset($argusAnswer->failure);
                 $this->getSiteInsightsCredentialsProviderService()->forgetAccessToken($insightsSite->credentialsEntryName);
                 continue;
             }
-            return;
+            return $providerCalls;
         }
+        return $providerCalls;
     }
 
     /**

@@ -1,6 +1,6 @@
 {
   "name": "@mgamadeus/ddd-site-insights",
-  "version": "0.1.0-rc.3",
+  "version": "0.1.0-rc.4",
   "description": "Frontend of the site insights module for backends built with mgamadeus/ddd (Composer package mgamadeus/ddd-site-insights): types generated from the module's API and pure window logic for Search Console data.",
   "keywords": [
     "ddd",

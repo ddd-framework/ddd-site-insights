@@ -31,13 +31,19 @@ class SearchExportSummary extends ValueObject
     /** @var int Provider calls made */
     public int $providerCalls = 0;
 
+    /** @var int Calls asked again after a retryable failure (they count as provider calls) */
+    public int $retries = 0;
+
+    /** @var Date|null The day the export continued after (--resumeAfter); the parts start the day after */
+    public ?Date $resumedAfter;
+
     /** @var bool The call budget (budgets.callsPerOperation.export) stopped the export before its end */
     public bool $limitReached = false;
 
     /** @var Date|null The last part written to its end; unset when none was */
     public ?Date $lastFinishedDay;
 
-    /** @var SearchPartError|null Why the export stopped early */
+    /** @var SearchPartError|null Why the export stopped early (after budgets.exportRetries for a retryable cause); continue with --resumeAfter=<lastFinishedDay> */
     public ?SearchPartError $error;
 
     /** @var bool Grouped by query: rare queries are missing, sums are below the totals */

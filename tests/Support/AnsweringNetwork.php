@@ -6,16 +6,18 @@ namespace DDD\Tests\SiteInsights\Support;
 
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
+use Throwable;
 
 /**
  * The network of a test that answers each call by its request body (the calls of a batch arrive in any order):
- * {@see $answerForBody} receives the decoded JSON body and the request and returns Google's answer.
+ * {@see $answerForBody} receives the decoded JSON body and the request and returns Google's answer, or a Throwable for
+ * a call that gets no answer (a rejected call: timeout, connection error).
  */
 class AnsweringNetwork
 {
     public CapturingNetwork $capturingNetwork;
 
-    /** @var callable fn(array $requestBody, RequestInterface $request): Response */
+    /** @var callable fn(array $requestBody, RequestInterface $request): Response|Throwable */
     public $answerForBody;
 
     public static function install(callable $answerForBody): self
@@ -23,7 +25,7 @@ class AnsweringNetwork
         $answeringNetwork = new self();
         $answeringNetwork->answerForBody = $answerForBody;
         $answeringNetwork->capturingNetwork = CapturingNetwork::installAnsweringBy(
-            static fn (RequestInterface $request): Response => ($answeringNetwork->answerForBody)((array)json_decode((string)$request->getBody(), true), $request)
+            static fn (RequestInterface $request): Response|Throwable => ($answeringNetwork->answerForBody)((array)json_decode((string)$request->getBody(), true), $request)
         );
         return $answeringNetwork;
     }

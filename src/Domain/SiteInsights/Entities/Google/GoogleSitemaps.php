@@ -13,6 +13,9 @@ class GoogleSitemaps extends GoogleProviderAnswer
 {
     public const string RESOURCE = 'sitemaps';
 
+    /** @var int 2: the files carry their contents (older cache entries are not read) */
+    public const int SCHEMA_VERSION = 2;
+
     /** @var string Search Console property */
     public string $siteUrl;
 

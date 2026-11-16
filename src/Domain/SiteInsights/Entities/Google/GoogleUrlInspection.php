@@ -17,6 +17,9 @@ class GoogleUrlInspection extends GoogleProviderAnswer
 {
     public const string RESOURCE = 'urlInspection';
 
+    /** @var int 2: crawledAs, sitemaps and referring URLs are read (older cache entries are not read) */
+    public const int SCHEMA_VERSION = 2;
+
     /** @var string Search Console property the URL belongs to */
     public string $siteUrl;
 
@@ -49,6 +52,15 @@ class GoogleUrlInspection extends GoogleProviderAnswer
 
     /** @var string|null The canonical the page declares */
     public ?string $userCanonical;
+
+    /** @var string|null MOBILE or DESKTOP: the user agent of the last crawl */
+    public ?string $crawledAs;
+
+    /** @var string[] Sitemap files that list the URL, as Google knows them */
+    public array $sitemaps = [];
+
+    /** @var string[] URLs Google knows linking to the URL */
+    public array $referringUrls = [];
 
     /** @var string|null Link to the inspection in Search Console */
     public ?string $inspectionResultLink;

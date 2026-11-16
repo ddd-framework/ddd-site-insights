@@ -10,6 +10,8 @@ import type { reactHooksModuleName, TypedUseMutation, TypedUseQuery } from '@red
 
 import type { GetAdminSiteInsightsSitesApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesApiArg';
 import type { GetAdminSiteInsightsSitesApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesApiResponse';
+import type { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg';
+import type { GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse';
 import type { GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiArg';
 import type { GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchCountriesBySiteKeyApiResponse';
 import type { GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchDevicesBySiteKeyApiArg';
@@ -28,9 +30,14 @@ import type { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg } from '
 import type { GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse } from '../generated/models/_endpoints/GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse';
 import type { PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg } from '../generated/models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiArg';
 import type { PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse } from '../generated/models/_endpoints/PostAdminSiteInsightsSitesAccessChecksBySiteKeyApiResponse';
+import type { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg } from '../generated/models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg';
+import type { PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse } from '../generated/models/_endpoints/PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse';
 import { siteInsightsApiRequests } from '../generated/siteInsightsApiRequests';
 
-/** The one cache tag of the module: every query provides it; the access check (a POST) invalidates nothing. */
+/**
+ * The one cache tag of the module: every query provides it; the access check and the URL inspection (POSTs, each
+ * counting URL inspections against the provider's daily quota) invalidate nothing.
+ */
 export const SITE_INSIGHTS_TAG = 'SiteInsights';
 
 /** The prefix the generated request builders carry (the fixture application of the schema). */
@@ -109,6 +116,19 @@ export interface SiteInsightsApi {
     GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse,
     GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg
   >;
+  /** `GET /sites/{siteKey}/indexing/sitemaps`: the sitemap files of the site (a cached read, no daily quota). */
+  useIndexingSitemapsQuery: SiteInsightsQueryHook<
+    GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
+    GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg
+  >;
+  /**
+   * `POST /sites/{siteKey}/indexing/inspections`: inspects a bounded list of URLs; every URL not answered from the
+   * server's cache counts against the provider's daily inspection quota — call it on demand only.
+   */
+  useInspectUrlsMutation: SiteInsightsMutationHook<
+    PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse,
+    PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg
+  >;
 }
 
 /**
@@ -141,6 +161,8 @@ export function buildSiteInsightsRequests(apiPrefix: string) {
     searchPageGroups: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchPageGroupsBySiteKey),
     searchPageDetail: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchPageDetailBySiteKey),
     searchQueryDetail: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesSearchQueryDetailBySiteKey),
+    indexingSitemaps: rebase(siteInsightsApiRequests.getAdminSiteInsightsSitesIndexingSitemapsBySiteKey),
+    inspectUrls: rebase(siteInsightsApiRequests.postAdminSiteInsightsSitesIndexingInspectionsBySiteKey),
   };
 }
 
@@ -154,8 +176,9 @@ const createdApisByBaseApi = new WeakMap<object, Map<string, SiteInsightsApi>>()
  * scope); a second call with the same base api and prefix returns the first result.
  *
  * Cache: one tag (`SiteInsights`), provided by every query. The reads are GET and cached on the server (a final window
- * a day, a fresh one 30 minutes); the access check is a mutation that invalidates nothing — it counts a URL inspection
- * against the provider's daily quota, so nothing refetches it on its own.
+ * a day, a fresh one 30 minutes, sitemaps an hour); the access check and the URL inspection are mutations that
+ * invalidate nothing — they count URL inspections against the provider's daily quota, so nothing refetches them on
+ * their own (the server caches an inspection a day per URL).
  */
 export const createSiteInsightsApi = <ReducerPath extends string, TagTypes extends string>({
   baseApi,
@@ -214,6 +237,14 @@ export const createSiteInsightsApi = <ReducerPath extends string, TagTypes exten
         GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiResponse,
         GetAdminSiteInsightsSitesSearchQueryDetailBySiteKeyApiArg
       >({ query: requests.searchQueryDetail, providesTags: PROVIDED }),
+      siteInsightsIndexingSitemaps: build.query<
+        GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiResponse,
+        GetAdminSiteInsightsSitesIndexingSitemapsBySiteKeyApiArg
+      >({ query: requests.indexingSitemaps, providesTags: PROVIDED }),
+      siteInsightsInspectUrls: build.mutation<
+        PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiResponse,
+        PostAdminSiteInsightsSitesIndexingInspectionsBySiteKeyApiArg
+      >({ query: requests.inspectUrls }),
     }),
     overrideExisting: false,
   });
@@ -229,6 +260,8 @@ export const createSiteInsightsApi = <ReducerPath extends string, TagTypes exten
     useSearchPageGroupsQuery: api.useSiteInsightsSearchPageGroupsQuery,
     useSearchPageDetailQuery: api.useSiteInsightsSearchPageDetailQuery,
     useSearchQueryDetailQuery: api.useSiteInsightsSearchQueryDetailQuery,
+    useIndexingSitemapsQuery: api.useSiteInsightsIndexingSitemapsQuery,
+    useInspectUrlsMutation: api.useSiteInsightsInspectUrlsMutation,
   };
   createdApisByPrefix.set(apiPrefix, siteInsightsApi);
   return siteInsightsApi;
