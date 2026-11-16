@@ -1,0 +1,23 @@
+{
+    "name": "mgamadeus/ddd-site-insights",
+    "description": "Search Console insights for mgamadeus/ddd: reads Google Search Console through ddd-argus, caches the answers, stores nothing and states in every answer what it covers",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/ddd-framework/ddd-site-insights",
+    "authors": [
+        {
+            "name": "Marius-Eugen Gerdan",
+            "email": "marius@gerdan.net"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "mgamadeus/ddd": "^3.33.1",
+        "mgamadeus/ddd-argus": "^1.5.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "DDD\\": "src/"
+        }
+    }
+}
