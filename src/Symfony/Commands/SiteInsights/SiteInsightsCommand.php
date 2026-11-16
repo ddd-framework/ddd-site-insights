@@ -6,6 +6,13 @@ namespace DDD\Symfony\Commands\SiteInsights;
 
 use DDD\Domain\Base\Entities\ObjectSet;
 use DDD\Domain\Common\Entities\Accounts\Account;
+use DDD\Domain\SiteInsights\Entities\Search\SearchComparisonWindow;
+use DDD\Domain\SiteInsights\Entities\Search\SearchListRequest;
+use DDD\Domain\SiteInsights\Entities\Search\SearchMetricsComparison;
+use DDD\Domain\SiteInsights\Entities\Search\SearchPerformanceRows;
+use DDD\Domain\SiteInsights\Entities\Search\SearchRowsCoverage;
+use DDD\Domain\SiteInsights\Entities\Search\SearchTotals;
+use DDD\Domain\SiteInsights\Entities\Search\SearchWindow;
 use DDD\Domain\SiteInsights\Entities\Search\SearchWindowRequest;
 use DDD\Domain\SiteInsights\Entities\Sites\InsightsSite;
 use DDD\Domain\SiteInsights\Exceptions\SiteInsightsBudgetExceededException;
@@ -21,6 +28,7 @@ use DDD\Infrastructure\Services\AuthService;
 use DDD\Infrastructure\Services\DDDService;
 use DDD\Infrastructure\Traits\Serializer\SerializerTrait;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -119,10 +127,12 @@ abstract class SiteInsightsCommand extends Command
         return $siteInsightsAccessPolicyService->requireViewer();
     }
 
-    /** @return Account|null the application's account for CLI operations (`CLI_DEFAULT_ACCOUNT_ID_FOR_CLI_OPERATIONS`) */
+    /** @return Account|null the account the access policy names for console runs (SiteInsightsAccessPolicyService::findAccountForCliOperations()) */
     protected function findAccountForCliOperations(): ?Account
     {
-        return DDDService::instance()->getDefaultAccountForCliOperations();
+        /** @var SiteInsightsAccessPolicyService $siteInsightsAccessPolicyService */
+        $siteInsightsAccessPolicyService = DDDService::instance()->getService(SiteInsightsAccessPolicyService::class);
+        return $siteInsightsAccessPolicyService->findAccountForCliOperations();
     }
 
     /**
@@ -146,6 +156,18 @@ abstract class SiteInsightsCommand extends Command
     protected function buildWindowRequest(InputInterface $input): SearchWindowRequest
     {
         $searchWindowRequest = new SearchWindowRequest();
+        $this->applyWindowOptions($input, $searchWindowRequest);
+        return $searchWindowRequest;
+    }
+
+    /**
+     * @param InputInterface $input
+     * @param SearchWindowRequest $searchWindowRequest the request (or a list or export request) the options go into
+     * @return void
+     * @throws BadRequestException for a malformed day or day count
+     */
+    protected function applyWindowOptions(InputInterface $input, SearchWindowRequest $searchWindowRequest): void
+    {
         $searchWindowRequest->preset = (string)$input->getOption('preset');
         $searchWindowRequest->compare = (string)$input->getOption('compare');
         $searchWindowRequest->searchType = (string)$input->getOption('searchType');
@@ -170,7 +192,198 @@ abstract class SiteInsightsCommand extends Command
             }
             $searchWindowRequest->from = SearchDays::toDate(SearchDays::addDays(SearchDays::fromDate($searchWindowRequest->to), -((int)$sinceOption - 1)));
         }
-        return $searchWindowRequest;
+    }
+
+    /**
+     * @param InputInterface $input
+     * @param string $dimension query, page, country or device
+     * @return SearchListRequest the window, filter and list options
+     * @throws BadRequestException
+     */
+    protected function buildListRequest(InputInterface $input, string $dimension): SearchListRequest
+    {
+        $searchListRequest = new SearchListRequest();
+        $this->applyWindowOptions($input, $searchListRequest);
+        $searchListRequest->dimension = $dimension;
+        foreach (['queryContains', 'queryEquals', 'pageContains', 'pageEquals', 'pageGroup', 'country', 'device', 'sortDirection'] as $optionName) {
+            $optionValue = $input->getOption($optionName);
+            if ($optionValue !== null) {
+                $searchListRequest->$optionName = (string)$optionValue;
+            }
+        }
+        $searchListRequest->sortBy = (string)$input->getOption('sortBy');
+        foreach (['limit', 'offset'] as $integerOptionName) {
+            $optionValue = (string)$input->getOption($integerOptionName);
+            if (!ctype_digit($optionValue)) {
+                throw new BadRequestException('--' . $integerOptionName . ' must be a whole number');
+            }
+            $searchListRequest->$integerOptionName = (int)$optionValue;
+        }
+        return $searchListRequest;
+    }
+
+    /**
+     * Rows as a table: the dimension value, the metrics and, with a comparison, the counterpart state and deltas;
+     * then the window and coverage notes.
+     *
+     * @param OutputInterface $output
+     * @param string $title
+     * @param SearchPerformanceRows $searchPerformanceRows
+     * @return void
+     */
+    protected function writeRowsTable(OutputInterface $output, string $title, SearchPerformanceRows $searchPerformanceRows): void
+    {
+        $output->writeln('<info>' . $title . '</info>');
+        if (isset($searchPerformanceRows->error)) {
+            $output->writeln('  failed: ' . $searchPerformanceRows->error->cause . ' (' . $searchPerformanceRows->error->message . ')');
+            return;
+        }
+        $dimension = $searchPerformanceRows->dimensions[0] ?? 'date';
+        $table = new Table($output);
+        $table->setHeaders([$dimension, 'Clicks', 'Impressions', 'CTR', 'Position', 'Counterpart', 'Δ Clicks', 'Δ Position']);
+        foreach ($searchPerformanceRows->getElements() as $searchPerformanceRow) {
+            $searchMetricsComparison = $searchPerformanceRow->comparison ?? null;
+            $table->addRow([
+                ($searchPerformanceRow->getDimensionValue($dimension) ?? '') . (($searchPerformanceRow->isFilledDay ?? false) ? ' (no data)' : ''),
+                $searchPerformanceRow->metrics->clicks,
+                $searchPerformanceRow->metrics->impressions,
+                sprintf('%.2f%%', $searchPerformanceRow->metrics->ctr * 100),
+                isset($searchPerformanceRow->metrics->position) ? sprintf('%.1f', $searchPerformanceRow->metrics->position) : '',
+                $searchMetricsComparison?->counterpartState ?? '',
+                $this->formatClicksDelta($searchMetricsComparison),
+                isset($searchMetricsComparison->positionDelta) ? sprintf('%+.1f', $searchMetricsComparison->positionDelta) : '',
+            ]);
+        }
+        $table->render();
+        foreach ($this->buildCoverageNoteLines($searchPerformanceRows) as $coverageNoteLine) {
+            $output->writeln('  ' . $coverageNoteLine);
+        }
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @param string $title
+     * @param SearchTotals $searchTotals
+     * @return void
+     */
+    protected function writeTotalsLine(OutputInterface $output, string $title, SearchTotals $searchTotals): void
+    {
+        if (isset($searchTotals->error)) {
+            $output->writeln('<info>' . $title . '</info> failed: ' . $searchTotals->error->cause . ' (' . $searchTotals->error->message . ')');
+            return;
+        }
+        $currentMetrics = $searchTotals->metrics->current;
+        $output->writeln(sprintf(
+            '<info>%s</info> clicks %d, impressions %d, CTR %.2f%%, position %s, %s (%s); comparison: %s %s',
+            $title,
+            $currentMetrics->clicks,
+            $currentMetrics->impressions,
+            $currentMetrics->ctr * 100,
+            isset($currentMetrics->position) ? sprintf('%.1f', $currentMetrics->position) : '-',
+            $currentMetrics->aggregation,
+            $currentMetrics->hasData ? 'reported' : 'no row reported',
+            $searchTotals->metrics->counterpartState,
+            $this->formatClicksDelta($searchTotals->metrics)
+        ));
+    }
+
+    /**
+     * @param SearchWindow $searchWindow
+     * @param SearchComparisonWindow|null $searchComparisonWindow
+     * @return string the window in provider days, its data state and last final day, and the comparison window
+     */
+    protected function buildWindowNote(SearchWindow $searchWindow, ?SearchComparisonWindow $searchComparisonWindow): string
+    {
+        $windowNote = sprintf(
+            'Window %s – %s (%d days, %s, dataState %s, final data through %s by %s%s)',
+            SearchDays::fromDate($searchWindow->from),
+            SearchDays::fromDate($searchWindow->to),
+            $searchWindow->days,
+            $searchWindow->dayTimeZone,
+            $searchWindow->dataState,
+            isset($searchWindow->dataThroughDate) ? SearchDays::fromDate($searchWindow->dataThroughDate) : '?',
+            $searchWindow->dataThroughDateSource ?? '?',
+            $searchWindow->windowClamped ? ', raised to the earliest day kept' : ''
+        );
+        if ($searchComparisonWindow === null) {
+            return $windowNote;
+        }
+        if (!$searchComparisonWindow->isAvailable()) {
+            return $windowNote . '; comparison ' . $searchComparisonWindow->kind . ' refused: ' . $searchComparisonWindow->comparisonUnavailableReason;
+        }
+        return $windowNote . sprintf(
+            '; compared with %s – %s (%s%s)',
+            SearchDays::fromDate($searchComparisonWindow->from),
+            SearchDays::fromDate($searchComparisonWindow->to),
+            $searchComparisonWindow->kind,
+            $searchComparisonWindow->comparisonIsPartial ? ', partial: deltas per day' : ''
+        );
+    }
+
+    /**
+     * @param SearchPerformanceRows $searchPerformanceRows
+     * @return string[] what the rows cover, one note per line
+     */
+    protected function buildCoverageNoteLines(SearchPerformanceRows $searchPerformanceRows): array
+    {
+        $searchRowsCoverage = $searchPerformanceRows->coverage;
+        $coverageNoteLines = [];
+        if (isset($searchPerformanceRows->window)) {
+            $coverageNoteLines[] = $this->buildWindowNote($searchPerformanceRows->window, $searchPerformanceRows->comparisonWindow ?? null);
+        }
+        $coverageNoteLines[] = sprintf(
+            '%d rows fetched (%d per call), %s, sorted by %s, aggregation %s%s, %d provider calls%s',
+            $searchRowsCoverage->fetchedRows,
+            $searchRowsCoverage->rowLimitPerCall,
+            $searchRowsCoverage->limitReached ? 'more rows may exist (limit reached)' : ($searchRowsCoverage->providerRowsExhausted ? 'the provider returned fewer rows than asked' : 'page full'),
+            $searchRowsCoverage->sortScope === SearchRowsCoverage::SORT_SCOPE_PROVIDER ? 'the provider' : 'the module over the fetched rows',
+            $searchRowsCoverage->responseAggregation ?? '?',
+            $searchRowsCoverage->responseAggregationKnown ? '' : ' (not named by the provider)',
+            $searchRowsCoverage->providerCalls,
+            $searchRowsCoverage->fromCache ? ', from the cache' : ''
+        );
+        if ($searchRowsCoverage->anonymizedQueriesOmitted) {
+            $coverageNoteLines[] = 'Anonymised queries are omitted: sums of these rows are below the totals.';
+        }
+        if ($searchRowsCoverage->joinedDimensionsMayLoseRows) {
+            $coverageNoteLines[] = 'Query × page: the provider drops rows in joint reports.';
+        }
+        if ($searchRowsCoverage->duplicateRowsDropped > 0) {
+            $coverageNoteLines[] = $searchRowsCoverage->duplicateRowsDropped . ' rows repeated across pages were dropped.';
+        }
+        if ($searchRowsCoverage->counterpartsNotRequested > 0) {
+            $coverageNoteLines[] = $searchRowsCoverage->counterpartsNotRequested . ' rows have no counterpart asked (counterpart limits).';
+        }
+        return $coverageNoteLines;
+    }
+
+    /**
+     * @param SearchMetricsComparison|null $searchMetricsComparison
+     * @return string the clicks delta (absolute, or per day for a partial comparison), empty without one
+     */
+    protected function formatClicksDelta(?SearchMetricsComparison $searchMetricsComparison): string
+    {
+        if (isset($searchMetricsComparison->clicksDelta)) {
+            return sprintf('%+d', $searchMetricsComparison->clicksDelta);
+        }
+        if (isset($searchMetricsComparison->clicksPerDayDelta)) {
+            return sprintf('%+.1f/day', $searchMetricsComparison->clicksPerDayDelta);
+        }
+        return '';
+    }
+
+    /**
+     * @param SearchPerformanceRows|SearchTotals ...$answerParts
+     * @return int 1 when a part failed (the payload is printed all the same), else 0
+     */
+    protected function determineExitCodeOfParts(SearchPerformanceRows|SearchTotals ...$answerParts): int
+    {
+        foreach ($answerParts as $answerPart) {
+            if (isset($answerPart->error)) {
+                return self::EXIT_OPERATIONAL_FAILURE;
+            }
+        }
+        return self::EXIT_SUCCESS;
     }
 
     /**

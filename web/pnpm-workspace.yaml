@@ -1,4 +1,4 @@
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@mgamadeus/ddd-web@0.14.0'
+  - '@mgamadeus/ddd-web@0.15.0'

@@ -89,6 +89,1634 @@
                     "SiteInsights"
                 ]
             }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/overview": {
+            "get": {
+                "summary": "SiteInsights Search Overview",
+                "description": "Totals with comparison, the series by day, top queries, top pages, countries and devices of one window, each\npart with its coverage or error.",
+                "parameters": [
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchOverviewGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/queries": {
+            "get": {
+                "summary": "SiteInsights Search Queries",
+                "description": "Rows grouped by query, with the comparison window's counterpart per row when `compare` is set.",
+                "parameters": [
+                    {
+                        "name": "queryContains",
+                        "description": "Only queries containing this text (anonymised queries are never matched)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "queryEquals",
+                        "description": "Only this query",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "pageContains",
+                        "description": "Only pages whose URL contains this text",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageEquals",
+                        "description": "Only this page URL",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageGroup",
+                        "description": "Only pages of this configured page group (key)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "description": "Only this country (ISO 3166-1 alpha-3, lower case, e.g. deu)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "device",
+                        "description": "Only desktop, mobile or tablet  \nAllowed Values:  \n-   `desktop`\n-   `mobile`\n-   `tablet`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desktop",
+                                "mobile",
+                                "tablet"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "description": "Rows, 1 to 1000 (default 50)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "description": "First row, 0 to 24999 (default 0)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "description": "clicks (default), impressions, ctr or position  \nAllowed Values:  \n-   `clicks`\n-   `impressions`\n-   `ctr`\n-   `position`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "clicks",
+                                "impressions",
+                                "ctr",
+                                "position"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sortDirection",
+                        "description": "desc or asc (default desc, asc for position)  \nAllowed Values:  \n-   `desc`\n-   `asc`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchRowsGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/pages": {
+            "get": {
+                "summary": "SiteInsights Search Pages",
+                "description": "Rows grouped by page (page aggregation), with the comparison window's counterpart per row when `compare` is set.",
+                "parameters": [
+                    {
+                        "name": "queryContains",
+                        "description": "Only queries containing this text (anonymised queries are never matched)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "queryEquals",
+                        "description": "Only this query",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "pageContains",
+                        "description": "Only pages whose URL contains this text",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageEquals",
+                        "description": "Only this page URL",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageGroup",
+                        "description": "Only pages of this configured page group (key)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "description": "Only this country (ISO 3166-1 alpha-3, lower case, e.g. deu)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "device",
+                        "description": "Only desktop, mobile or tablet  \nAllowed Values:  \n-   `desktop`\n-   `mobile`\n-   `tablet`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desktop",
+                                "mobile",
+                                "tablet"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "description": "Rows, 1 to 1000 (default 50)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "description": "First row, 0 to 24999 (default 0)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "description": "clicks (default), impressions, ctr or position  \nAllowed Values:  \n-   `clicks`\n-   `impressions`\n-   `ctr`\n-   `position`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "clicks",
+                                "impressions",
+                                "ctr",
+                                "position"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sortDirection",
+                        "description": "desc or asc (default desc, asc for position)  \nAllowed Values:  \n-   `desc`\n-   `asc`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchRowsGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/countries": {
+            "get": {
+                "summary": "SiteInsights Search Countries",
+                "description": "Rows grouped by country, with the comparison window's counterpart per row when `compare` is set.",
+                "parameters": [
+                    {
+                        "name": "queryContains",
+                        "description": "Only queries containing this text (anonymised queries are never matched)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "queryEquals",
+                        "description": "Only this query",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "pageContains",
+                        "description": "Only pages whose URL contains this text",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageEquals",
+                        "description": "Only this page URL",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageGroup",
+                        "description": "Only pages of this configured page group (key)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "description": "Only this country (ISO 3166-1 alpha-3, lower case, e.g. deu)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "device",
+                        "description": "Only desktop, mobile or tablet  \nAllowed Values:  \n-   `desktop`\n-   `mobile`\n-   `tablet`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desktop",
+                                "mobile",
+                                "tablet"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "description": "Rows, 1 to 1000 (default 50)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "description": "First row, 0 to 24999 (default 0)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "description": "clicks (default), impressions, ctr or position  \nAllowed Values:  \n-   `clicks`\n-   `impressions`\n-   `ctr`\n-   `position`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "clicks",
+                                "impressions",
+                                "ctr",
+                                "position"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sortDirection",
+                        "description": "desc or asc (default desc, asc for position)  \nAllowed Values:  \n-   `desc`\n-   `asc`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchRowsGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/devices": {
+            "get": {
+                "summary": "SiteInsights Search Devices",
+                "description": "Rows grouped by device, with the comparison window's counterpart per row when `compare` is set.",
+                "parameters": [
+                    {
+                        "name": "queryContains",
+                        "description": "Only queries containing this text (anonymised queries are never matched)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "queryEquals",
+                        "description": "Only this query",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "pageContains",
+                        "description": "Only pages whose URL contains this text",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageEquals",
+                        "description": "Only this page URL",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "pageGroup",
+                        "description": "Only pages of this configured page group (key)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "description": "Only this country (ISO 3166-1 alpha-3, lower case, e.g. deu)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "device",
+                        "description": "Only desktop, mobile or tablet  \nAllowed Values:  \n-   `desktop`\n-   `mobile`\n-   `tablet`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desktop",
+                                "mobile",
+                                "tablet"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "description": "Rows, 1 to 1000 (default 50)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "description": "First row, 0 to 24999 (default 0)",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "description": "clicks (default), impressions, ctr or position  \nAllowed Values:  \n-   `clicks`\n-   `impressions`\n-   `ctr`\n-   `position`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "clicks",
+                                "impressions",
+                                "ctr",
+                                "position"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sortDirection",
+                        "description": "desc or asc (default desc, asc for position)  \nAllowed Values:  \n-   `desc`\n-   `asc`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchRowsGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/pageGroups": {
+            "get": {
+                "summary": "SiteInsights Search Page Groups",
+                "description": "One aggregate per configured page group, with comparison. Groups may overlap and are never summed.",
+                "parameters": [
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchPageGroupsGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/pageDetail": {
+            "get": {
+                "summary": "SiteInsights Search Page Detail",
+                "description": "One page in depth: metrics and series with comparison, the queries it was shown for, its page group.",
+                "parameters": [
+                    {
+                        "name": "url",
+                        "description": "The page URL; must belong to the site's property",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchPageDetailGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
+        },
+        "/api/admin/siteInsights/sites/{siteKey}/search/queryDetail": {
+            "get": {
+                "summary": "SiteInsights Search Query Detail",
+                "description": "One query in depth: metrics and series with comparison, the pages shown for it.",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "description": "The query, exactly as the provider reports it",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 400
+                        }
+                    },
+                    {
+                        "name": "preset",
+                        "description": "7d, 28d (default), 90d, 6m, 12m or 16m, ending on the last day with data; ignored with from and to  \nAllowed Values:  \n-   `7d`\n-   `28d`\n-   `90d`\n-   `6m`\n-   `12m`\n-   `16m`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "7d",
+                                "28d",
+                                "90d",
+                                "6m",
+                                "12m",
+                                "16m"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "description": "First day (Y-m-d, a day of the provider's day zone); with to instead of the preset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "description": "Last day (Y-m-d, a day of the provider's day zone); at most the last day with data of the data state",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "description": "none (default), previousPeriod or previousYear (52 weeks earlier, weekdays aligned)  \nAllowed Values:  \n-   `none`\n-   `previousPeriod`\n-   `previousYear`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "previousPeriod",
+                                "previousYear"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "searchType",
+                        "description": "web (default), image, video, news, discover or googleNews  \nAllowed Values:  \n-   `web`\n-   `image`\n-   `video`\n-   `news`\n-   `discover`\n-   `googleNews`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "web",
+                                "image",
+                                "video",
+                                "news",
+                                "discover",
+                                "googleNews"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dataState",
+                        "description": "final (default: settled days only) or all (fresh days that may still change)  \nAllowed Values:  \n-   `final`\n-   `all`\n",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "final",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "siteKey",
+                        "description": "Key of the site (config SiteInsights.sites)",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "noCache",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "outputFormat",
+                        "description": "Common request parameter — see \"Shared request parameters\".",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchQueryDetailGetResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequest: The data provided does not match requirements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DDD.Infrastructure.Exceptions.BadRequestException"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "SiteInsights"
+                ]
+            }
         }
     },
     "components": {
@@ -484,6 +2112,728 @@
                         "description": "The fully qualified class name of the object"
                     }
                 }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchOverviewGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "searchPerformanceOverview": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceOverview"
+                    }
+                },
+                "required": [
+                    "searchPerformanceOverview"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceOverview": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "window": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow"
+                    },
+                    "comparisonWindow": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow"
+                    },
+                    "dataThroughDate": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The last day with final data (provider days)"
+                    },
+                    "dataThroughDateSource": {
+                        "type": "string",
+                        "description": "probe or fallback"
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTotals"
+                    },
+                    "series": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "topQueries": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "topPages": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "countries": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "devices": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchWindow": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "First day, inclusive"
+                    },
+                    "to": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Last day, inclusive"
+                    },
+                    "days": {
+                        "type": "integer",
+                        "description": "Days of the window, both ends included"
+                    },
+                    "preset": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The preset the window was built from (7d, 28d, 90d, 6m, 12m, 16m); unset for explicit days"
+                    },
+                    "windowClamped": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether `from` was raised to the earliest day the provider keeps"
+                    },
+                    "dayTimeZone": {
+                        "type": "string",
+                        "description": "The provider's day zone, e.g. America/Los_Angeles"
+                    },
+                    "dataState": {
+                        "type": "string",
+                        "description": "final (settled days) or all (fresh days that may still change)"
+                    },
+                    "searchType": {
+                        "type": "string",
+                        "description": "Search type, e.g. web"
+                    },
+                    "dataThroughDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "The last day with final data"
+                    },
+                    "dataThroughDateSource": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "probe (read from the provider) or fallback (today − 3 in the provider's zone)"
+                    },
+                    "firstIncompleteDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "The first incomplete day (dataState all)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "description": "previousPeriod or previousYear (52 weeks, weekdays aligned)"
+                    },
+                    "comparisonIsPartial": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the comparison was shortened to the provider's retention (deltas per day)"
+                    },
+                    "comparisonUnavailableReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "outsideRetention or tooShortInsideRetention; unset when the comparison is available"
+                    },
+                    "from": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "First day, inclusive"
+                    },
+                    "to": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Last day, inclusive"
+                    },
+                    "days": {
+                        "type": "integer",
+                        "description": "Days of the window, both ends included"
+                    },
+                    "preset": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The preset the window was built from (7d, 28d, 90d, 6m, 12m, 16m); unset for explicit days"
+                    },
+                    "windowClamped": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether `from` was raised to the earliest day the provider keeps"
+                    },
+                    "dayTimeZone": {
+                        "type": "string",
+                        "description": "The provider's day zone, e.g. America/Los_Angeles"
+                    },
+                    "dataState": {
+                        "type": "string",
+                        "description": "final (settled days) or all (fresh days that may still change)"
+                    },
+                    "searchType": {
+                        "type": "string",
+                        "description": "Search type, e.g. web"
+                    },
+                    "dataThroughDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "The last day with final data"
+                    },
+                    "dataThroughDateSource": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "probe (read from the provider) or fallback (today − 3 in the provider's zone)"
+                    },
+                    "firstIncompleteDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "The first incomplete day (dataState all)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchTotals": {
+                "type": "object",
+                "properties": {
+                    "metrics": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetricsComparison"
+                    },
+                    "coverage": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchRowsCoverage"
+                    },
+                    "comparisonCoverage": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchRowsCoverage"
+                    },
+                    "error": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchMetricsComparison": {
+                "type": "object",
+                "properties": {
+                    "current": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetrics"
+                    },
+                    "previous": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetrics"
+                    },
+                    "counterpartState": {
+                        "type": "string",
+                        "description": "observed, notObserved, notRequested or failed"
+                    },
+                    "clicksDelta": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Clicks current − previous (equal window lengths)"
+                    },
+                    "impressionsDelta": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Impressions current − previous (equal window lengths)"
+                    },
+                    "clicksPerDayDelta": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Per-day clicks current − previous (partial comparison)"
+                    },
+                    "impressionsPerDayDelta": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Per-day impressions current − previous (partial comparison)"
+                    },
+                    "ctrDelta": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Click rate current − previous"
+                    },
+                    "positionDelta": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Position current − previous (negative = better)"
+                    },
+                    "perDay": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the click and impression deltas are per-day averages"
+                    },
+                    "previousDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "Series only: the day of the comparison window this day is compared with (aligned by offset)"
+                    },
+                    "error": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchMetrics": {
+                "type": "object",
+                "properties": {
+                    "clicks": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Clicks"
+                    },
+                    "impressions": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Impressions"
+                    },
+                    "ctr": {
+                        "type": "number",
+                        "default": 0,
+                        "description": "Click rate 0–1; 0 without impressions"
+                    },
+                    "position": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Average position (1 = top); unset when the provider or search type has none"
+                    },
+                    "aggregation": {
+                        "type": "string",
+                        "default": "byProperty",
+                        "description": "byProperty or byPage, as the provider answered (SearchRowsCoverage::$responseAggregation)"
+                    },
+                    "hasData": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "false: the provider returned no row for this question (zeros are not observations)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPartError": {
+                "type": "object",
+                "properties": {
+                    "cause": {
+                        "type": "string",
+                        "description": "A SiteInsightsErrorCause value"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "What failed, at most 160 characters; never a key, token or e-mail address"
+                    },
+                    "providerStatus": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "The provider's HTTP status, when it answered"
+                    },
+                    "retryable": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether asking again later may succeed"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchRowsCoverage": {
+                "type": "object",
+                "properties": {
+                    "fetchedRows": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Rows the module fetched for this list"
+                    },
+                    "providerCalls": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Provider calls made (cache hits not counted)"
+                    },
+                    "fromCache": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether every part was served from the cache"
+                    },
+                    "fetchedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the provider answered (the oldest part)"
+                    },
+                    "rowLimitPerCall": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Rows asked per call"
+                    },
+                    "limitReached": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "The module stopped (limit, ceiling or budget) while the last page was full"
+                    },
+                    "providerRowsExhausted": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "The last page returned fewer rows than asked (not \"all rows\": the provider keeps top rows only)"
+                    },
+                    "sortScope": {
+                        "type": "string",
+                        "default": "provider",
+                        "description": "provider (the provider sorted) or fetchedRows (the module sorted the rows it fetched)"
+                    },
+                    "duplicateRowsDropped": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Rows dropped across pages because their identity was already seen"
+                    },
+                    "requestedAggregation": {
+                        "type": "string",
+                        "description": "Aggregation asked: auto, byPage or byProperty"
+                    },
+                    "responseAggregation": {
+                        "type": "string",
+                        "description": "Aggregation answered: byPage or byProperty"
+                    },
+                    "responseAggregationKnown": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the provider named its aggregation"
+                    },
+                    "anonymizedQueriesOmitted": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Grouped or filtered by query: rare queries are missing, sums are below the totals"
+                    },
+                    "joinedDimensionsMayLoseRows": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Query × page: the provider drops rows in joint reports"
+                    },
+                    "counterpartChunks": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Counterpart calls made for a comparison"
+                    },
+                    "counterpartsNotRequested": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Rows whose counterpart was not asked (limits)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "description": "Provider key, e.g. google-search-console"
+                    },
+                    "dimensions": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Dimensions the rows are grouped by",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "window": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow"
+                    },
+                    "comparisonWindow": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow"
+                    },
+                    "coverage": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchRowsCoverage"
+                    },
+                    "error": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRow"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRow": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "Day (provider days, SearchWindow::$dayTimeZone); set when grouped by date"
+                    },
+                    "query": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Search query; set when grouped by query"
+                    },
+                    "page": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Page URL as the provider reports it; set when grouped by page"
+                    },
+                    "country": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Country, ISO 3166-1 alpha-3 lower case; set when grouped by country"
+                    },
+                    "device": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "desktop, mobile, tablet; set when grouped by device"
+                    },
+                    "searchAppearance": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Search appearance; set when grouped by it"
+                    },
+                    "metrics": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetrics"
+                    },
+                    "comparison": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetricsComparison"
+                    },
+                    "isFilledDay": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "description": "Series only: true for a day the provider reported nothing for (filled with zeros)"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchRowsGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "searchPerformanceRows": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    }
+                },
+                "required": [
+                    "searchPerformanceRows"
+                ]
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchPageGroupsGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "searchPageGroupPerformances": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPageGroupPerformances"
+                    }
+                },
+                "required": [
+                    "searchPageGroupPerformances"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPageGroupPerformances": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "window": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow"
+                    },
+                    "comparisonWindow": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow"
+                    },
+                    "groupsMayOverlap": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Always true: a page can belong to several groups, so group numbers must not be added up"
+                    },
+                    "aggregation": {
+                        "type": "string",
+                        "default": "byPage",
+                        "description": "byPage: each group counts per page, which is higher than the property totals"
+                    },
+                    "pageGroupsLeftOut": {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Configured groups beyond budgets.maxPageGroups that were not asked"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPageGroupPerformance"
+                        }
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPageGroupPerformance": {
+                "type": "object",
+                "properties": {
+                    "pageGroup": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroup"
+                    },
+                    "pageExpression": {
+                        "type": "string",
+                        "description": "The RE2 expression the group was asked with (page includingRegex)"
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTotals"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchPageDetailGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "searchPageDetail": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPageDetail"
+                    }
+                },
+                "required": [
+                    "searchPageDetail"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchPageDetail": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "page": {
+                        "type": "string",
+                        "description": "The page URL as asked (trimmed)"
+                    },
+                    "pageGroup": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsPageGroup"
+                    },
+                    "window": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow"
+                    },
+                    "comparisonWindow": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow"
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTotals"
+                    },
+                    "series": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "queries": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
+            },
+            "DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchQueryDetailGetResponseDto": {
+                "type": "object",
+                "properties": {
+                    "searchQueryDetail": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchQueryDetail"
+                    }
+                },
+                "required": [
+                    "searchQueryDetail"
+                ]
+            },
+            "DDD.Domain.SiteInsights.Entities.Search.SearchQueryDetail": {
+                "type": "object",
+                "properties": {
+                    "siteKey": {
+                        "type": "string",
+                        "description": "Key of the site"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "The query as asked (trimmed, exact match)"
+                    },
+                    "window": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow"
+                    },
+                    "comparisonWindow": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow"
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTotals"
+                    },
+                    "series": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "pages": {
+                        "$ref": "#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows"
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The fully qualified class name of the object"
+                    }
+                }
             }
         }
     },
@@ -521,6 +2871,62 @@
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Sites.InsightsSites\" />"
         },
         {
+            "name": "SearchComparisonWindow",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchComparisonWindow\" />"
+        },
+        {
+            "name": "SearchMetrics",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetrics\" />"
+        },
+        {
+            "name": "SearchMetricsComparison",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchMetricsComparison\" />"
+        },
+        {
+            "name": "SearchPageDetail",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPageDetail\" />"
+        },
+        {
+            "name": "SearchPageGroupPerformance",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPageGroupPerformance\" />"
+        },
+        {
+            "name": "SearchPageGroupPerformances",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPageGroupPerformances\" />"
+        },
+        {
+            "name": "SearchPartError",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPartError\" />"
+        },
+        {
+            "name": "SearchPerformanceOverview",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceOverview\" />"
+        },
+        {
+            "name": "SearchPerformanceRow",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRow\" />"
+        },
+        {
+            "name": "SearchPerformanceRows",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchPerformanceRows\" />"
+        },
+        {
+            "name": "SearchQueryDetail",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchQueryDetail\" />"
+        },
+        {
+            "name": "SearchRowsCoverage",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchRowsCoverage\" />"
+        },
+        {
+            "name": "SearchTotals",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchTotals\" />"
+        },
+        {
+            "name": "SearchWindow",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Domain.SiteInsights.Entities.Search.SearchWindow\" />"
+        },
+        {
             "name": "SiteInsights",
             "description": "Search Console insights: sites, search performance and indexing"
         },
@@ -535,6 +2941,26 @@
         {
             "name": "SiteInsightsAccessChecksGetResponseDto",
             "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsAccessChecksGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSearchOverviewGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchOverviewGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSearchPageDetailGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchPageDetailGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSearchPageGroupsGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchPageGroupsGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSearchQueryDetailGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchQueryDetailGetResponseDto\" />"
+        },
+        {
+            "name": "SiteInsightsSearchRowsGetResponseDto",
+            "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DDD.Presentation.Api.Admin.SiteInsights.Dtos.SiteInsightsSearchRowsGetResponseDto\" />"
         },
         {
             "name": "SiteInsightsSitesGetResponseDto",
@@ -577,7 +3003,26 @@
                 "ValidationError",
                 "ValidationResult",
                 "ExceptionDetails",
-                "ExceptionDetail"
+                "ExceptionDetail",
+                "SiteInsightsSearchOverviewGetResponseDto",
+                "SearchPerformanceOverview",
+                "SearchWindow",
+                "SearchComparisonWindow",
+                "SearchTotals",
+                "SearchMetricsComparison",
+                "SearchMetrics",
+                "SearchPartError",
+                "SearchRowsCoverage",
+                "SearchPerformanceRows",
+                "SearchPerformanceRow",
+                "SiteInsightsSearchRowsGetResponseDto",
+                "SiteInsightsSearchPageGroupsGetResponseDto",
+                "SearchPageGroupPerformances",
+                "SearchPageGroupPerformance",
+                "SiteInsightsSearchPageDetailGetResponseDto",
+                "SearchPageDetail",
+                "SiteInsightsSearchQueryDetailGetResponseDto",
+                "SearchQueryDetail"
             ]
         }
     ]

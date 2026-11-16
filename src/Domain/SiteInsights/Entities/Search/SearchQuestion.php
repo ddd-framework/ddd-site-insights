@@ -48,6 +48,9 @@ class SearchQuestion extends ValueObject
     /** @var Date|null The last final day when known: a final window ending on or before it is cached longer (not part of the identity) */
     public ?Date $dataThroughDate;
 
+    /** @var bool false: never read from or written to the cache (an export; not part of the identity) */
+    public bool $cacheable = true;
+
     /** @var bool Whether this is the availability probe (cached `cache.probeTtlSeconds`; not part of the identity) */
     public bool $isAvailabilityProbe = false;
 

@@ -102,8 +102,8 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         $insightsProviderCapabilities->dataStates = self::DATA_STATES;
         $insightsProviderCapabilities->aggregations = self::AGGREGATIONS;
         $insightsProviderCapabilities->dayTimeZone = self::DAY_TIME_ZONE;
-        $insightsProviderCapabilities->retentionMonths = (int)$budgetsConfig['retention']['months'];
-        $insightsProviderCapabilities->maxRowsPerCall = min(self::PROVIDER_MAX_ROW_LIMIT, (int)$budgetsConfig['maxRowsPerCall']);
+        $insightsProviderCapabilities->retentionMonths = $budgetsConfig->retentionMonths;
+        $insightsProviderCapabilities->maxRowsPerCall = min(self::PROVIDER_MAX_ROW_LIMIT, $budgetsConfig->maxRowsPerCall);
         $insightsProviderCapabilities->hasHourlyData = false;
         return $insightsProviderCapabilities;
     }
@@ -115,10 +115,10 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
 
     public function getEarliestDay(): string
     {
-        $retention = $this->getSiteInsightsConfigService()->getBudgetsConfig()['retention'];
+        $budgetsConfig = $this->getSiteInsightsConfigService()->getBudgetsConfig();
         return SearchDays::addDays(
-            SearchDays::subtractMonthsClamped($this->getToday(), (int)$retention['months']),
-            (int)$retention['safetyDays']
+            SearchDays::subtractMonthsClamped($this->getToday(), $budgetsConfig->retentionMonths),
+            $budgetsConfig->retentionSafetyDays
         );
     }
 
@@ -211,7 +211,7 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
             if (isset($cachedEntriesByCacheKey[$cacheKey])) {
                 // a stale entry exists: joining would only find it again
                 $argusCacheInFlightComputation->claimComputation();
-            } elseif (!$argusCacheInFlightComputation->joinPendingComputationOrClaim($this->getSiteInsightsConfigService()->getCacheSettingInt('joinWaitMilliseconds'))) {
+            } elseif (!$argusCacheInFlightComputation->joinPendingComputationOrClaim($this->getSiteInsightsConfigService()->getCacheConfig()->joinWaitMilliseconds)) {
                 // another process wrote the entry meanwhile
                 $joinedEntries = $this->readCachedEntries([$cacheKey => $cacheLevelsByCacheKey[$cacheKey]], [$cacheKey => $lifetimeSeconds]);
                 $joinedReport = $this->hydrateFreshCachedReport($insightsSite, $searchQuestion, $joinedEntries[$cacheKey] ?? null, $lifetimeSeconds);
@@ -380,7 +380,7 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         $argusGoogleSitemaps->credentialsEntryName = $insightsSite->credentialsEntryName;
         $argusGoogleSitemaps->credentialsRevision = $insightsSite->credentialsRevision;
         $argusGoogleSitemaps->siteUrl = $insightsSite->property;
-        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheSettingInt('sitemapsTtlSeconds');
+        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheConfig()->sitemapsTtlSeconds;
         $argusGoogleSitemaps->getArgusSettings()->argusLoad->cacheTtl = $lifetimeSeconds;
         $this->loadSingleAnswer($insightsSite, $argusGoogleSitemaps, SiteInsightsProviderBudgetsService::QUOTA_OTHER, $useCache, $lifetimeSeconds);
         return $argusGoogleSitemaps;
@@ -404,7 +404,7 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         if ($languageCode !== null) {
             $argusGoogleUrlInspection->languageCode = $languageCode;
         }
-        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheSettingInt('inspectionTtlSeconds');
+        $lifetimeSeconds = $this->getSiteInsightsConfigService()->getCacheConfig()->inspectionTtlSeconds;
         $argusGoogleUrlInspection->getArgusSettings()->argusLoad->cacheTtl = $lifetimeSeconds;
         $this->loadSingleAnswer($insightsSite, $argusGoogleUrlInspection, SiteInsightsProviderBudgetsService::QUOTA_INSPECTION, $useCache, $lifetimeSeconds);
         return $argusGoogleUrlInspection;
@@ -483,7 +483,7 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         $argusGoogleSearchAnalyticsReports->setPropertiesToLoad(ArgusGoogleSearchAnalyticsReport::class);
         $argusSettings = $argusGoogleSearchAnalyticsReports->getArgusSettings();
         $argusSettings->keepFulfilledCallsWhenOneIsRejected = true;
-        $argusSettings->timeout = (float)$this->getSiteInsightsConfigService()->getBudgetSetting('batchTimeoutSeconds');
+        $argusSettings->timeout = (float)$this->getSiteInsightsConfigService()->getBudgetsConfig()->batchTimeoutSeconds;
         $argusGoogleSearchAnalyticsReports->argusLoad(useArgusEntityCache: false, autoloadCurrentObject: false);
     }
 
@@ -525,7 +525,7 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
         /** @var ArgusGoogleSites|ArgusGoogleSite|ArgusGoogleSitemaps|ArgusGoogleUrlInspection $argusAnswer */
         $argusSettings = $argusAnswer->getArgusSettings();
         $argusSettings->keepFulfilledCallsWhenOneIsRejected = true;
-        $argusSettings->timeout = (float)$this->getSiteInsightsConfigService()->getBudgetSetting('singleCallTimeoutSeconds');
+        $argusSettings->timeout = (float)$this->getSiteInsightsConfigService()->getBudgetsConfig()->singleCallTimeoutSeconds;
         if ($useCache) {
             $argusAnswer->argusLoad(useArgusEntityCache: true);
             if ($argusSettings->loadedFromCache && $argusAnswer->hasAnswer() && !$argusAnswer->isOlderThan($lifetimeSeconds, $this->getFreshnessCheckTimestamp())) {
@@ -713,25 +713,28 @@ class GoogleSearchConsoleSourceService extends SearchConsoleSourceService
      */
     protected function determineCacheLifetimeSeconds(SearchQuestion $searchQuestion): int
     {
-        $siteInsightsConfigService = $this->getSiteInsightsConfigService();
+        $cacheConfig = $this->getSiteInsightsConfigService()->getCacheConfig();
         if ($searchQuestion->isAvailabilityProbe) {
-            return $siteInsightsConfigService->getCacheSettingInt('probeTtlSeconds');
+            return $cacheConfig->probeTtlSeconds;
         }
         if ($searchQuestion->dataState === SearchWindowRequest::DATA_STATE_FINAL
             && isset($searchQuestion->dataThroughDate)
             && strcmp(SearchDays::fromDate($searchQuestion->endDate), SearchDays::fromDate($searchQuestion->dataThroughDate)) <= 0
         ) {
-            return $siteInsightsConfigService->getCacheSettingInt('finalWindowTtlSeconds');
+            return $cacheConfig->finalWindowTtlSeconds;
         }
-        return $siteInsightsConfigService->getCacheSettingInt('freshWindowTtlSeconds');
+        return $cacheConfig->freshWindowTtlSeconds;
     }
 
     /**
      * @param SearchQuestion $searchQuestion
-     * @return int totals and series (small) in memory and Redis; row lists in Redis only
+     * @return int totals and series (small) in memory and Redis; row lists in Redis only; nothing for an export
      */
     protected function determineCacheLevel(SearchQuestion $searchQuestion): int
     {
+        if (!$searchQuestion->cacheable) {
+            return ArgusCache::CACHELEVEL_NONE;
+        }
         $dimensions = array_values(array_unique($searchQuestion->dimensions));
         if ($dimensions === [] || $dimensions === ['date']) {
             return ArgusCache::CACHELEVEL_MEMORY_AND_DB;

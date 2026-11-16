@@ -179,8 +179,8 @@ class SearchWindowsService extends Service
         }
         $comparisonDays = SearchDays::daysInclusive($previousFromDay, $previousToDay);
         if ($searchComparisonWindow->comparisonIsPartial) {
-            $comparisonLimits = (array)$this->getSiteInsightsConfigService()->getBudgetSetting('comparison');
-            if ($comparisonDays < (int)$comparisonLimits['minDays'] || $comparisonDays / $searchWindow->days < (float)$comparisonLimits['minShare']) {
+            $budgetsConfig = $this->getSiteInsightsConfigService()->getBudgetsConfig();
+            if ($comparisonDays < $budgetsConfig->comparisonMinDays || $comparisonDays / $searchWindow->days < $budgetsConfig->comparisonMinShare) {
                 $searchComparisonWindow->comparisonUnavailableReason = SearchComparisonWindow::UNAVAILABLE_TOO_SHORT_INSIDE_RETENTION;
                 return $searchComparisonWindow;
             }

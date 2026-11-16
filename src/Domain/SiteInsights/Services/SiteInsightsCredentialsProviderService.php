@@ -55,14 +55,14 @@ class SiteInsightsCredentialsProviderService extends Service
     {
         /** @var SiteInsightsConfigService $siteInsightsConfigService */
         $siteInsightsConfigService = DDDService::instance()->getService(SiteInsightsConfigService::class);
-        $credentialsEntry = $siteInsightsConfigService->getCredentialsConfig()['entries'][$credentialsEntryName] ?? null;
-        if (!is_array($credentialsEntry)) {
+        $siteInsightsCredentialsEntry = $siteInsightsConfigService->getCredentialsConfig()->entries->findEntryByName($credentialsEntryName);
+        if ($siteInsightsCredentialsEntry === null) {
             throw SiteInsightsProviderUnavailableException::forCause(
                 SiteInsightsErrorCause::KEY_UNREADABLE,
                 'Credentials entry "' . $credentialsEntryName . '": the entry is not configured'
             );
         }
-        return max(1, (int)($credentialsEntry['revision'] ?? 1));
+        return $siteInsightsCredentialsEntry->revision;
     }
 
     protected function getGoogleServiceAccountTokensService(): GoogleServiceAccountTokensService

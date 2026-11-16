@@ -107,16 +107,16 @@ class SiteInsightsProviderBudgetsService extends Service
      */
     public function assertOperationBudget(string $operation, int $plannedCalls): void
     {
-        $callsPerOperation = (array)$this->getSiteInsightsConfigService()->getBudgetSetting('callsPerOperation');
-        if (!isset($callsPerOperation[$operation])) {
+        $allowedCalls = $this->getSiteInsightsConfigService()->getBudgetsConfig()->getCallsAllowedForOperation($operation);
+        if ($allowedCalls === null) {
             throw new BadRequestException('Unknown site insights operation "' . mb_substr($operation, 0, 40) . '"');
         }
-        if ($plannedCalls > (int)$callsPerOperation[$operation]) {
+        if ($plannedCalls > $allowedCalls) {
             throw new SiteInsightsBudgetExceededException(sprintf(
                 'The operation %s would need %d provider calls; it may make %d',
                 $operation,
                 $plannedCalls,
-                (int)$callsPerOperation[$operation]
+                $allowedCalls
             ));
         }
     }
@@ -150,8 +150,8 @@ class SiteInsightsProviderBudgetsService extends Service
             case self::QUOTA_SEARCH_ANALYTICS:
             case self::QUOTA_OTHER:
                 $perMinuteLimit = $quotaKind === self::QUOTA_SEARCH_ANALYTICS
-                    ? $budgetsConfig['searchAnalyticsPerMinutePerSite'] * $budgetsConfig['searchAnalyticsShare']
-                    : $budgetsConfig['otherPerMinute'] * $budgetsConfig['otherShare'];
+                    ? $budgetsConfig->searchAnalyticsPerMinutePerSite * $budgetsConfig->searchAnalyticsShare
+                    : $budgetsConfig->otherPerMinute * $budgetsConfig->otherShare;
                 $minuteCounter = SiteInsightsBudgetCounter::create(
                     $this->buildCounterKey($quotaKind, $propertyHash, $minuteBucket),
                     self::MINUTE_BUCKET_TTL_SECONDS,
@@ -165,13 +165,13 @@ class SiteInsightsProviderBudgetsService extends Service
                 $dayCounter = SiteInsightsBudgetCounter::create(
                     $this->buildCounterKey($quotaKind, $propertyHash, $providerDayBucket),
                     self::DAY_BUCKET_TTL_SECONDS,
-                    (int)floor($budgetsConfig['inspectionsPerDayPerSite'] * $budgetsConfig['inspectionShare']),
+                    (int)floor($budgetsConfig->inspectionsPerDayPerSite * $budgetsConfig->inspectionShare),
                     'day ' . $providerDayBucket . ' (Pacific Time)'
                 );
                 $minuteCounter = SiteInsightsBudgetCounter::create(
                     $this->buildCounterKey($quotaKind . 'PerMinute', $propertyHash, $minuteBucket),
                     self::MINUTE_BUCKET_TTL_SECONDS,
-                    (int)floor($budgetsConfig['inspectionsPerMinutePerSite'] * $budgetsConfig['inspectionShare']),
+                    (int)floor($budgetsConfig->inspectionsPerMinutePerSite * $budgetsConfig->inspectionShare),
                     $minuteBucketDescription
                 );
                 $siteInsightsBudgetCounters->add($dayCounter, $minuteCounter);

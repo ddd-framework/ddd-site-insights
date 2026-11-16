@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.1.0-rc.3
+
+Search performance.
+
+### Added
+- `SearchPerformanceService`: overview (totals with comparison, series by day with filled and marked days, top
+  queries, top pages, countries, devices — one batch of distinct questions), lists by query, page, country and device
+  (provider order, or pages up to `sortFetchCeiling` sorted by the module) with the comparison window's counterpart per
+  row (keys asked in RE2 chunks; `notObserved` instead of zero), page groups, the detail of one page and of one query,
+  and the export (paged to its end, day by day, never cached, streamed). Every answer carries window, comparison window
+  and coverage, or `error` per part.
+- Endpoints `SiteInsightsSearchControllerTrait`: `GET /sites/{siteKey}/search/overview`, `…/queries`, `…/pages`,
+  `…/countries`, `…/devices`, `…/pageGroups`, `…/pageDetail`, `…/queryDetail`.
+- Commands `app:site-insights:overview`, `queries`, `pages`, `countries`, `devices`, `page-groups`, `page`, `query`,
+  `export` (`--format=table|json|toon`; JSON = the endpoint's payload).
+- Value objects `SearchListRequest`, `SearchExportRequest`, `SearchTotals`, `SearchPerformanceOverview`,
+  `SearchPageDetail`, `SearchQueryDetail`, `SearchPageGroupPerformance(s)`, `SearchExportSummary`, `SearchExportDay(s)`;
+  `SearchMetricsComparison::createFromMetrics()`, `previousDate`, `error`; `SearchRegex`.
+- Budgets `overviewListSize` (25) and `detailListSize` (50).
+- npm: `createSiteInsightsApi({ baseApi, apiPrefix })` with ten hooks, `buildSiteInsightsRequests`,
+  `formatDelta`, `formatCoverageNotes`, `formatWindowNote`; the search types. Generated with `@mgamadeus/ddd-web`
+  0.15.0.
+
+### Changed (breaking)
+- `SiteInsightsConfigService` returns value objects: `getSiteEntries(): SiteInsightsSiteEntries`,
+  `getCredentialsConfig(): SiteInsightsCredentialsConfig`, `getCacheConfig(): SiteInsightsCacheConfig`,
+  `getBudgetsConfig(): SiteInsightsBudgetsConfig`. `getCacheSettingInt()`, `getBudgetSetting()` and the `*_DEFAULTS`
+  constants are gone; the defaults live on the value objects.
+- The console account comes from `SiteInsightsAccessPolicyService::findAccountForCliOperations()` (default unchanged:
+  the application's CLI account).
+
+- Requires `mgamadeus/ddd ^3.33.3`: a framework `Date` keeps the calendar day it names in every PHP default zone, so
+  the window parameters `from` / `to` of the search endpoints are `Date` (hydrated from `Y-m-d`).
+
 ## 0.1.0-rc.2
 
 ### Changed

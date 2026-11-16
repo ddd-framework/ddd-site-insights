@@ -74,7 +74,7 @@ class GoogleApiRequestsService extends Service
         $siteInsightsConfigService = DDDService::instance()->getService(SiteInsightsConfigService::class);
         return max(1, min(
             ArgusApiOperation::PRIVATE_RESPONSE_MAX_BYTES_LIMIT,
-            (int)$siteInsightsConfigService->getBudgetSetting('maxResponseBytes')
+            $siteInsightsConfigService->getBudgetsConfig()->maxResponseBytes
         ));
     }
 }

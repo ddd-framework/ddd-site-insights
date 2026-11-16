@@ -5,7 +5,7 @@ stored, coverage stated in every answer.
 
 **Package:** `mgamadeus/ddd-site-insights` (Composer) and `@mgamadeus/ddd-site-insights` (npm, `web/`), same version
 **Namespace:** `DDD\`
-**Depends on:** `mgamadeus/ddd` (^3.33.2), `mgamadeus/ddd-argus` (^1.5.1)
+**Depends on:** `mgamadeus/ddd` (^3.33.3), `mgamadeus/ddd-argus` (^1.5.1)
 
 > **This module follows all DDD Core conventions** (`vendor/mgamadeus/ddd/AGENTS.md` and its skills) and the Argus
 > skill. Module skill: `.claude/skills/ddd-module-site-insights-specialist/SKILL.md`.
@@ -19,20 +19,24 @@ src/
 |   +-- Credentials/          [GoogleServiceAccountKey, GoogleAccessTokenGrant: never serialised, never services]
 |   +-- Entities/
 |   |   +-- Access/           [SiteInsightsAccessCheck(s)]
+|   |   +-- Config/           [typed configuration: SiteInsightsBudgetsConfig, …CacheConfig, …CredentialsConfig, site entries]
 |   |   +-- Budgets/          [SiteInsightsBudgetCounter(s)]
 |   |   +-- Errors/           [SiteInsightsErrorCause]
 |   |   +-- Google/           [raw answers in Google's shape: GoogleSearchAnalyticsReport, GoogleSites, GoogleSite, GoogleSitemaps, GoogleUrlInspection, GoogleApiFailure]
-|   |   +-- Search/           [neutral reports and coverage: SearchPerformanceRows, SearchWindow, SearchRowsCoverage, SearchQuestion, …]
+|   |   +-- Search/           [neutral reports and coverage: SearchPerformanceRows, SearchWindow, SearchRowsCoverage, SearchQuestion,
+|   |                          SearchPerformanceOverview, SearchTotals, SearchPageDetail, SearchQueryDetail, SearchPageGroupPerformance(s),
+|   |                          SearchListRequest, SearchExportRequest, SearchExportSummary, …]
 |   |   +-- Sites/            [InsightsSite(s), InsightsPageGroup(s), InsightsProviderCapabilities]
 |   +-- Exceptions/           [SiteInsightsProviderUnavailableException (503), SiteInsightsBudgetExceededException (429)]
 |   +-- Repo/Argus/Google/    [Argus repositories of the raw answers]
-|   +-- Services/             [public: config, sites, access policy, credentials, tokens, request builder, source, windows, budgets, access checks]
-|   +-- Utils/SearchDays.php  [day arithmetic on UTC days]
+|   +-- Services/             [public: config, sites, access policy, credentials, tokens, request builder, source, windows, budgets,
+|   |                          access checks, search performance]
+|   +-- Utils/                [SearchDays: day arithmetic on UTC days; SearchRegex: RE2 expressions of counterparts and page groups]
 +-- Presentation/Api/Admin/SiteInsights/ [controller traits and DTOs]
 +-- Symfony/Commands/SiteInsights/       [SiteInsightsCommand and the commands]
 config/app/SiteInsights/      [sites, credentials, cache, budgets, opportunities]
 tests/                        [synthetic fixtures, no network; Schema/ writes web/schema/site-insights.openapi.json]
-web/                          [npm package: generated types, window logic]
+web/                          [npm package: API factory, generated types, window, delta and coverage logic]
 ```
 
 ## Rules of this module
@@ -43,7 +47,12 @@ web/                          [npm package: generated types, window logic]
 - Never print, log or cache environment variables, keys or tokens; `check-access` prints states only.
 - Every endpoint and command asks `SiteInsightsAccessPolicyService` before any cache read.
 - Days: `SearchDays` only; a `Date` is created with `SearchDays::toDate()` and never modified.
-- Nullable properties stay uninitialised (no `= null`) and are read with `?? null`.
+- Nullable properties stay uninitialised (no `= null`) and are read with `?? null` (request DTOs excepted: their
+  query parameters are `= null`).
+- Configuration is read only through `SiteInsightsConfigService`, which returns value objects; no array of settings
+  leaves it.
+- Every search answer carries its window, comparison window and coverage (or `error`); a missing counterpart is
+  `notObserved`, never zero. Reads that count against a daily quota are POST, never GET.
 - Services are resolved from the container by class id at use, never kept in properties; extension points are
   replaced by registering a subclass under the module's class id.
 - Fixtures are synthetic (`example.test`, invented queries and numbers); the test key is generated at test time.

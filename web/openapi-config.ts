@@ -3,7 +3,7 @@ import { defineConfig } from '@mgamadeus/ddd-web/codegen';
 // The source is the schema the PHP schema test writes (schema/site-insights.openapi.json, committed). Models,
 // argument and response types are generated with ddd-web-sdk; the endpoints file is bound to a placeholder base api
 // (`src/api/codegenBaseApi.ts`, never exported) and its request builders go into a module of their own
-// (`siteInsightsApiRequests.ts`), which the package's factory injects into a host's api (B2).
+// (`siteInsightsApiRequests.ts`), which `createSiteInsightsApi` rebases and injects into a host's api.
 export default defineConfig({
   modelsDir: './src/generated/models',
   models: { naming: 'document', index: false },

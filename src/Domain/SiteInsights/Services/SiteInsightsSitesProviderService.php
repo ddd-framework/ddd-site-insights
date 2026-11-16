@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DDD\Domain\SiteInsights\Services;
 
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsSiteEntry;
 use DDD\Domain\SiteInsights\Entities\Sites\InsightsPageGroup;
 use DDD\Domain\SiteInsights\Entities\Sites\InsightsPageGroups;
 use DDD\Domain\SiteInsights\Entities\Sites\InsightsProviderCapabilities;
@@ -41,8 +42,8 @@ class SiteInsightsSitesProviderService extends Service
         /** @var SiteInsightsConfigService $siteInsightsConfigService */
         $siteInsightsConfigService = DDDService::instance()->getService(SiteInsightsConfigService::class);
         $insightsSites = new InsightsSites();
-        foreach ($siteInsightsConfigService->getSiteEntries() as $siteIndex => $siteEntry) {
-            $insightsSite = $this->buildSite(is_array($siteEntry) ? $siteEntry : [], (string)$siteIndex);
+        foreach ($siteInsightsConfigService->getSiteEntries()->getElements() as $siteInsightsSiteEntry) {
+            $insightsSite = $this->buildSite($siteInsightsSiteEntry);
             if ($insightsSites->findSiteByKey($insightsSite->key) !== null) {
                 throw new InternalErrorException('SiteInsights.sites: the site key "' . $insightsSite->key . '" is configured twice');
             }
@@ -52,32 +53,32 @@ class SiteInsightsSitesProviderService extends Service
     }
 
     /**
-     * @param array $siteEntry
-     * @param string $siteIndex position in the config, named in errors before the key is known
+     * @param SiteInsightsSiteEntry $siteInsightsSiteEntry
      * @return InsightsSite
      * @throws InternalErrorException
      */
-    protected function buildSite(array $siteEntry, string $siteIndex): InsightsSite
+    protected function buildSite(SiteInsightsSiteEntry $siteInsightsSiteEntry): InsightsSite
     {
-        $siteKey = $siteEntry['key'] ?? null;
-        if (!is_string($siteKey) || preg_match(self::SITE_KEY_PATTERN, $siteKey) !== 1) {
-            throw new InternalErrorException('SiteInsights.sites[' . $siteIndex . ']: the key must match ' . self::SITE_KEY_PATTERN);
+        $siteKey = $siteInsightsSiteEntry->key ?? null;
+        if ($siteKey === null || preg_match(self::SITE_KEY_PATTERN, $siteKey) !== 1) {
+            throw new InternalErrorException('SiteInsights.sites[' . $siteInsightsSiteEntry->position . ']: the key must match ' . self::SITE_KEY_PATTERN);
         }
         $insightsSite = new InsightsSite();
         $insightsSite->key = $siteKey;
-        $insightsSite->label = is_string($siteEntry['label'] ?? null) && $siteEntry['label'] !== '' ? $siteEntry['label'] : $siteKey;
-        $provider = $siteEntry['provider'] ?? GoogleSearchConsoleSourceService::PROVIDER;
+        $label = $siteInsightsSiteEntry->label ?? '';
+        $insightsSite->label = $label !== '' ? $label : $siteKey;
+        $provider = $siteInsightsSiteEntry->provider ?? GoogleSearchConsoleSourceService::PROVIDER;
         if (!in_array($provider, self::SUPPORTED_PROVIDERS, true)) {
             throw $this->createSiteConfigException($siteKey, 'the provider is not supported');
         }
         $insightsSite->provider = $provider;
-        $property = $siteEntry['property'] ?? null;
-        if (!is_string($property) || !$this->isValidProperty($property)) {
+        $property = $siteInsightsSiteEntry->property ?? null;
+        if ($property === null || !$this->isValidProperty($property)) {
             throw $this->createSiteConfigException($siteKey, 'the property must be "https://host/…/" or "sc-domain:host"');
         }
         $insightsSite->property = $property;
-        $credentialsEntryName = $siteEntry['credentials'] ?? null;
-        if (!is_string($credentialsEntryName) || $credentialsEntryName === '') {
+        $credentialsEntryName = $siteInsightsSiteEntry->credentials ?? '';
+        if ($credentialsEntryName === '') {
             throw $this->createSiteConfigException($siteKey, 'the site names no credentials entry');
         }
         $insightsSite->credentialsEntryName = $credentialsEntryName;
@@ -88,22 +89,20 @@ class SiteInsightsSitesProviderService extends Service
         } catch (SiteInsightsProviderUnavailableException $siteInsightsProviderUnavailableException) {
             throw $this->createSiteConfigException($siteKey, 'its credentials entry "' . $credentialsEntryName . '" is not configured');
         }
-        $insightsSite->brandQueryPatterns = $this->readPatterns($siteEntry['brandQueryPatterns'] ?? [], $siteKey, 'brandQueryPatterns');
+        $insightsSite->brandQueryPatterns = $this->validatePatterns($siteInsightsSiteEntry->brandQueryPatterns, $siteKey, 'brandQueryPatterns');
         $insightsSite->pageGroups = new InsightsPageGroups();
-        foreach ((array)($siteEntry['pageGroups'] ?? []) as $pageGroupIndex => $pageGroupEntry) {
-            $pageGroupKey = is_array($pageGroupEntry) ? ($pageGroupEntry['key'] ?? null) : null;
-            if (!is_string($pageGroupKey) || preg_match(self::SITE_KEY_PATTERN, $pageGroupKey) !== 1) {
-                throw $this->createSiteConfigException($siteKey, 'pageGroups[' . $pageGroupIndex . ']: the key must match ' . self::SITE_KEY_PATTERN);
+        foreach (array_values($siteInsightsSiteEntry->pageGroups->getElements()) as $pageGroupPosition => $siteInsightsPageGroupEntry) {
+            $pageGroupKey = $siteInsightsPageGroupEntry->key ?? null;
+            if ($pageGroupKey === null || preg_match(self::SITE_KEY_PATTERN, $pageGroupKey) !== 1) {
+                throw $this->createSiteConfigException($siteKey, 'pageGroups[' . $pageGroupPosition . ']: the key must match ' . self::SITE_KEY_PATTERN);
             }
-            foreach ($insightsSite->pageGroups->getElements() as $existingPageGroup) {
-                if ($existingPageGroup->key === $pageGroupKey) {
-                    throw $this->createSiteConfigException($siteKey, 'the page group "' . $pageGroupKey . '" is configured twice');
-                }
+            if ($insightsSite->pageGroups->findPageGroupByKey($pageGroupKey) !== null) {
+                throw $this->createSiteConfigException($siteKey, 'the page group "' . $pageGroupKey . '" is configured twice');
             }
             $insightsPageGroup = new InsightsPageGroup();
             $insightsPageGroup->key = $pageGroupKey;
-            $insightsPageGroup->label = is_string($pageGroupEntry['label'] ?? null) ? $pageGroupEntry['label'] : $pageGroupKey;
-            $insightsPageGroup->pathPatterns = $this->readPatterns($pageGroupEntry['pathPatterns'] ?? [], $siteKey, 'pageGroups.' . $pageGroupKey);
+            $insightsPageGroup->label = $siteInsightsPageGroupEntry->label ?? $pageGroupKey;
+            $insightsPageGroup->pathPatterns = $this->validatePatterns($siteInsightsPageGroupEntry->pathPatterns, $siteKey, 'pageGroups.' . $pageGroupKey);
             if (!$insightsPageGroup->pathPatterns) {
                 throw $this->createSiteConfigException($siteKey, 'the page group "' . $pageGroupKey . '" has no path pattern');
             }
@@ -137,31 +136,23 @@ class SiteInsightsSitesProviderService extends Service
     }
 
     /**
-     * @param mixed $patterns
+     * @param string[] $patterns
      * @param string $siteKey
      * @param string $settingName
      * @return string[] the patterns, each compilable and free of constructs RE2 rejects
      * @throws InternalErrorException
      */
-    protected function readPatterns(mixed $patterns, string $siteKey, string $settingName): array
+    protected function validatePatterns(array $patterns, string $siteKey, string $settingName): array
     {
-        if (!is_array($patterns)) {
-            throw $this->createSiteConfigException($siteKey, $settingName . ' must be a list of patterns');
-        }
-        $validPatterns = [];
         foreach ($patterns as $pattern) {
-            if (!is_string($pattern) || $pattern === '') {
-                throw $this->createSiteConfigException($siteKey, $settingName . ' holds an empty or non-string pattern');
-            }
             if (preg_match(self::NON_RE2_CONSTRUCT_PATTERN, $pattern) === 1) {
                 throw $this->createSiteConfigException($siteKey, $settingName . ' holds a pattern RE2 rejects (lookaround, backreference or atomic group)');
             }
             if (!self::isCompilablePattern($pattern)) {
                 throw $this->createSiteConfigException($siteKey, $settingName . ' holds a pattern that does not compile');
             }
-            $validPatterns[] = $pattern;
         }
-        return $validPatterns;
+        return array_values($patterns);
     }
 
     /**

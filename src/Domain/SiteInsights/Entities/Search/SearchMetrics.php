@@ -50,6 +50,17 @@ class SearchMetrics extends ValueObject
         return $searchMetrics;
     }
 
+    /**
+     * @param string $aggregation
+     * @return static zeros the provider did not report (hasData false: not an observation)
+     */
+    public static function createWithoutData(string $aggregation): static
+    {
+        $searchMetrics = static::create(0, 0, null, $aggregation);
+        $searchMetrics->hasData = false;
+        return $searchMetrics;
+    }
+
     public function uniqueKey(): string
     {
         return static::uniqueKeyStatic((string)spl_object_id($this));

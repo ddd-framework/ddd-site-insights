@@ -16,4 +16,17 @@ use DDD\Domain\Base\Entities\ObjectSet;
  */
 class InsightsPageGroups extends ObjectSet
 {
+    /**
+     * @param string $pageGroupKey
+     * @return InsightsPageGroup|null
+     */
+    public function findPageGroupByKey(string $pageGroupKey): ?InsightsPageGroup
+    {
+        foreach ($this->getElements() as $insightsPageGroup) {
+            if ($insightsPageGroup->key === $pageGroupKey) {
+                return $insightsPageGroup;
+            }
+        }
+        return null;
+    }
 }

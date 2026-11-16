@@ -6,6 +6,7 @@ namespace DDD\Tests\SiteInsights\Schema;
 
 use DDD\Presentation\Base\OpenApi\Document;
 use DDD\Symfony\Loaders\CustomAnnotationClassLoader;
+use DDD\Tests\SiteInsights\Fixture\Controller\FixtureSiteInsightsSearchController;
 use DDD\Tests\SiteInsights\Fixture\Controller\FixtureSiteInsightsSitesController;
 use DDD\Tests\SiteInsights\Schema\Probe\SiteInsightsSchemaProbeController;
 use DDD\Tests\SiteInsights\Support\SiteInsightsTestCase;
@@ -24,7 +25,7 @@ class OpenApiSchemaTest extends SiteInsightsTestCase
     public const string MODULE_SCHEMA_PREFIX = 'DDD.Domain.SiteInsights.';
 
     /** @var string[] Fixture controllers whose endpoints form the committed schema */
-    public const array FIXTURE_CONTROLLERS = [FixtureSiteInsightsSitesController::class];
+    public const array FIXTURE_CONTROLLERS = [FixtureSiteInsightsSitesController::class, FixtureSiteInsightsSearchController::class];
 
     /**
      * @param string[] $controllerClasses

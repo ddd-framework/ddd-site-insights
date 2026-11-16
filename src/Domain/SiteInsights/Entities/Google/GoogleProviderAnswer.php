@@ -6,7 +6,8 @@ namespace DDD\Domain\SiteInsights\Entities\Google;
 
 use DDD\Domain\Base\Entities\ValueObject;
 use DDD\Infrastructure\Base\DateTime\DateTime;
-use DDD\Infrastructure\Libs\Config;
+use DDD\Domain\SiteInsights\Services\SiteInsightsConfigService;
+use DDD\Infrastructure\Services\DDDService;
 
 /**
  * One question to a Google Search Console resource and Google's answer, in Google's own shape. Carries the question
@@ -86,8 +87,9 @@ abstract class GoogleProviderAnswer extends ValueObject
     /** @return int config SiteInsights.cache.schemaVersion */
     public static function getCacheSchemaVersion(): int
     {
-        $cacheConfig = Config::get('SiteInsights.cache');
-        return (int)(is_array($cacheConfig) ? ($cacheConfig['schemaVersion'] ?? 1) : 1);
+        /** @var SiteInsightsConfigService $siteInsightsConfigService */
+        $siteInsightsConfigService = DDDService::instance()->getService(SiteInsightsConfigService::class);
+        return $siteInsightsConfigService->getCacheConfig()->schemaVersion;
     }
 
     /**

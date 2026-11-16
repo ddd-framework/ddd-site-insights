@@ -9,6 +9,7 @@ use DDD\Domain\Base\Repo\Argus\Utils\ArgusTransportRecording;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Message\RequestInterface;
 
 /**
@@ -29,6 +30,22 @@ class CapturingNetwork
         $capturingNetwork = new self();
         $capturingNetwork->mockHandler = new MockHandler($queuedAnswers);
         $networkHandlerStack = HandlerStack::create($capturingNetwork->mockHandler);
+        $networkHandlerStack->push(Middleware::history($capturingNetwork->sentRequests));
+        $capturingNetwork->argusTransportRecording = ArgusTransportRecording::forRecording($networkHandlerStack);
+        ArgusApiOperations::$transportRecording = $capturingNetwork->argusTransportRecording;
+        return $capturingNetwork;
+    }
+
+    /**
+     * @param callable $answerForRequest fn(RequestInterface $request): ResponseInterface, asked for every call (the
+     *        answer passes a one-answer mock handler, so on_headers and sinks behave as with queued answers)
+     */
+    public static function installAnsweringBy(callable $answerForRequest): self
+    {
+        $capturingNetwork = new self();
+        $capturingNetwork->mockHandler = new MockHandler();
+        $answeringHandler = static fn (RequestInterface $request, array $options): PromiseInterface => (new MockHandler([$answerForRequest($request)]))($request, $options);
+        $networkHandlerStack = HandlerStack::create($answeringHandler);
         $networkHandlerStack->push(Middleware::history($capturingNetwork->sentRequests));
         $capturingNetwork->argusTransportRecording = ArgusTransportRecording::forRecording($networkHandlerStack);
         ArgusApiOperations::$transportRecording = $capturingNetwork->argusTransportRecording;

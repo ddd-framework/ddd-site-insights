@@ -41,4 +41,7 @@ return [
     'counterpart' => ['keysPerChunk' => 100, 'maxChunks' => 5, 'regexMaxLength' => 4000],
     'maxPageGroups' => 20,
     'maxInspectionUrls' => 20,
+    // rows of each top list of the overview, and of the list of a page or query detail
+    'overviewListSize' => 25,
+    'detailListSize' => 50,
 ];

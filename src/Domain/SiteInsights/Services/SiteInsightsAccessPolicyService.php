@@ -7,6 +7,7 @@ namespace DDD\Domain\SiteInsights\Services;
 use DDD\Domain\Common\Entities\Accounts\Account;
 use DDD\Infrastructure\Exceptions\ForbiddenException;
 use DDD\Infrastructure\Services\AuthService;
+use DDD\Infrastructure\Services\DDDService;
 use DDD\Infrastructure\Services\Service;
 
 /**
@@ -41,6 +42,15 @@ class SiteInsightsAccessPolicyService extends Service
     public function canExport(?Account $account): bool
     {
         return $this->canView($account);
+    }
+
+    /**
+     * @return Account|null the account the console commands run as (default: the application's account for CLI
+     *         operations, `CLI_DEFAULT_ACCOUNT_ID_FOR_CLI_OPERATIONS`); it must pass {@see canView()} like any other
+     */
+    public function findAccountForCliOperations(): ?Account
+    {
+        return DDDService::instance()->getDefaultAccountForCliOperations();
     }
 
     /**

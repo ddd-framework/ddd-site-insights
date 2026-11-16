@@ -1,6 +1,6 @@
 {
   "name": "@mgamadeus/ddd-site-insights",
-  "version": "0.1.0-rc.2",
+  "version": "0.1.0-rc.3",
   "description": "Frontend of the site insights module for backends built with mgamadeus/ddd (Composer package mgamadeus/ddd-site-insights): types generated from the module's API and pure window logic for Search Console data.",
   "keywords": [
     "ddd",
@@ -57,7 +57,7 @@
     "react-redux": "^9.0.0"
   },
   "devDependencies": {
-    "@mgamadeus/ddd-web": "^0.14.0",
+    "@mgamadeus/ddd-web": "^0.15.0",
     "@reduxjs/toolkit": "^2.13.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.3.0",

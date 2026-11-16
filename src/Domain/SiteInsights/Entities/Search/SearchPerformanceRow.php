@@ -38,6 +38,23 @@ class SearchPerformanceRow extends ValueObject
     /** @var bool|null Series only: true for a day the provider reported nothing for (filled with zeros) */
     public ?bool $isFilledDay;
 
+    /**
+     * @param string $dimension date, query, page, country, device or searchAppearance
+     * @return string|null the row's value of the dimension (a date as `Y-m-d`); null when the row has none
+     */
+    public function getDimensionValue(string $dimension): ?string
+    {
+        return match ($dimension) {
+            'date' => isset($this->date) ? SearchDays::fromDate($this->date) : null,
+            'query' => $this->query ?? null,
+            'page' => $this->page ?? null,
+            'country' => $this->country ?? null,
+            'device' => $this->device ?? null,
+            'searchAppearance' => $this->searchAppearance ?? null,
+            default => null,
+        };
+    }
+
     /** @return string identity = the dimension values that are set */
     public function uniqueKey(): string
     {

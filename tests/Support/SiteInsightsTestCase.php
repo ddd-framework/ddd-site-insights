@@ -12,6 +12,7 @@ use DDD\Domain\SiteInsights\Services\GoogleApiRequestsService;
 use DDD\Domain\SiteInsights\Services\GoogleSearchConsoleSourceService;
 use DDD\Domain\SiteInsights\Services\GoogleServiceAccountTokensService;
 use DDD\Domain\SiteInsights\Services\InsightsSitesService;
+use DDD\Domain\SiteInsights\Services\SearchPerformanceService;
 use DDD\Domain\SiteInsights\Services\SearchWindowsService;
 use DDD\Domain\SiteInsights\Services\SiteInsightsAccessCheckService;
 use DDD\Domain\SiteInsights\Services\SiteInsightsAccessPolicyService;
@@ -38,6 +39,7 @@ abstract class SiteInsightsTestCase extends TestCase
         GoogleSearchConsoleSourceService::class,
         GoogleServiceAccountTokensService::class,
         InsightsSitesService::class,
+        SearchPerformanceService::class,
         SearchWindowsService::class,
         SiteInsightsAccessCheckService::class,
         SiteInsightsAccessPolicyService::class,

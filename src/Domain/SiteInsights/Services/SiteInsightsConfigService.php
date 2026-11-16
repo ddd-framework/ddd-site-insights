@@ -4,119 +4,117 @@ declare(strict_types=1);
 
 namespace DDD\Domain\SiteInsights\Services;
 
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsBudgetsConfig;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsCacheConfig;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsCredentialsConfig;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsPageGroupEntries;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsPageGroupEntry;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsSiteEntries;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsSiteEntry;
+use DDD\Infrastructure\Exceptions\InternalErrorException;
 use DDD\Infrastructure\Libs\Config;
 use DDD\Infrastructure\Services\Service;
 
 /**
- * Reads the module's configuration (`config/app/SiteInsights/*.php`). An application replaces a file as a whole; a key
- * its file leaves out falls back to the module default below. Each file is read as a whole, never key by key.
+ * Reads the module's configuration (`config/app/SiteInsights/*.php`) into typed value objects. An application replaces
+ * a file as a whole; a setting its file leaves out keeps the default of the value object. Each file is read as a
+ * whole on every call, never cached in the service.
  */
 class SiteInsightsConfigService extends Service
 {
-    public const array CREDENTIALS_DEFAULTS = [
-        'entries' => [],
-        'tokenEndpoint' => 'https://oauth2.googleapis.com/token',
-        'scope' => 'https://www.googleapis.com/auth/webmasters.readonly',
-        'assertionLifetimeSeconds' => 300,
-        'tokenSafetyMarginSeconds' => 300,
-        'httpTimeoutSeconds' => 10,
-    ];
-
-    public const array CACHE_DEFAULTS = [
-        'schemaVersion' => 1,
-        'finalWindowTtlSeconds' => 86400,
-        'freshWindowTtlSeconds' => 1800,
-        'probeTtlSeconds' => 3600,
-        'sitemapsTtlSeconds' => 3600,
-        'inspectionTtlSeconds' => 86400,
-        'joinWaitMilliseconds' => 10000,
-    ];
-
-    public const array BUDGETS_DEFAULTS = [
-        'searchAnalyticsPerMinutePerSite' => 1200,
-        'searchAnalyticsShare' => 0.5,
-        'inspectionsPerDayPerSite' => 2000,
-        'inspectionsPerMinutePerSite' => 600,
-        'inspectionShare' => 0.5,
-        'otherPerMinute' => 200,
-        'otherShare' => 0.5,
-        'rowsPerCall' => 2500,
-        'maxRowsPerCall' => 10000,
-        'sortFetchCeiling' => 5000,
-        'maxResponseBytes' => 4000000,
-        'batchTimeoutSeconds' => 25,
-        'singleCallTimeoutSeconds' => 20,
-        'retention' => ['months' => 16, 'safetyDays' => 3],
-        'comparison' => ['minDays' => 7, 'minShare' => 0.25],
-        'callsPerOperation' => [
-            'overview' => 10,
-            'list' => 8,
-            'pageGroups' => 41,
-            'pageDetail' => 7,
-            'queryDetail' => 7,
-            'opportunities' => 20,
-            'sitemaps' => 1,
-            'inspections' => 20,
-            'export' => 1500,
-            'checkAccess' => 6,
-        ],
-        'counterpart' => ['keysPerChunk' => 100, 'maxChunks' => 5, 'regexMaxLength' => 4000],
-        'maxPageGroups' => 20,
-        'maxInspectionUrls' => 20,
-    ];
-
-    /** @return array the configured site entries (`SiteInsights.sites.sites`) */
-    public function getSiteEntries(): array
+    /**
+     * @return SiteInsightsSiteEntries the configured site entries (`SiteInsights.sites.sites`), in config order
+     * @throws InternalErrorException when an entry or a list in it has the wrong shape
+     */
+    public function getSiteEntries(): SiteInsightsSiteEntries
     {
         $sitesConfig = Config::get('SiteInsights.sites');
-        $siteEntries = is_array($sitesConfig) ? ($sitesConfig['sites'] ?? []) : [];
-        return is_array($siteEntries) ? $siteEntries : [];
+        $configuredSites = is_array($sitesConfig) ? ($sitesConfig['sites'] ?? []) : [];
+        $siteInsightsSiteEntries = new SiteInsightsSiteEntries();
+        foreach (is_array($configuredSites) ? $configuredSites : [] as $sitePosition => $siteSettings) {
+            $siteInsightsSiteEntry = $this->buildSiteEntry(is_array($siteSettings) ? $siteSettings : [], (string)$sitePosition);
+            $siteInsightsSiteEntries->add($siteInsightsSiteEntry);
+        }
+        return $siteInsightsSiteEntries;
     }
 
-    /** @return array `SiteInsights.credentials` over the module defaults */
-    public function getCredentialsConfig(): array
+    /** @return SiteInsightsCredentialsConfig `SiteInsights.credentials` over the defaults */
+    public function getCredentialsConfig(): SiteInsightsCredentialsConfig
     {
-        return $this->readConfigFile('credentials', self::CREDENTIALS_DEFAULTS);
+        return SiteInsightsCredentialsConfig::fromConfigSettings((array)(Config::get('SiteInsights.credentials') ?? []));
     }
 
-    /** @return array `SiteInsights.cache` over the module defaults */
-    public function getCacheConfig(): array
+    /** @return SiteInsightsCacheConfig `SiteInsights.cache` over the defaults */
+    public function getCacheConfig(): SiteInsightsCacheConfig
     {
-        return $this->readConfigFile('cache', self::CACHE_DEFAULTS);
+        return SiteInsightsCacheConfig::fromConfigSettings((array)(Config::get('SiteInsights.cache') ?? []));
     }
 
-    /** @return array `SiteInsights.budgets` over the module defaults */
-    public function getBudgetsConfig(): array
+    /** @return SiteInsightsBudgetsConfig `SiteInsights.budgets` over the defaults */
+    public function getBudgetsConfig(): SiteInsightsBudgetsConfig
     {
-        return $this->readConfigFile('budgets', self::BUDGETS_DEFAULTS);
-    }
-
-    /**
-     * @param string $key
-     * @return int a cache setting as int
-     */
-    public function getCacheSettingInt(string $key): int
-    {
-        return (int)($this->getCacheConfig()[$key] ?? 0);
+        return SiteInsightsBudgetsConfig::fromConfigSettings((array)(Config::get('SiteInsights.budgets') ?? []));
     }
 
     /**
-     * @param string $key
-     * @return int|float|array|string|null a budgets setting
+     * @param array $siteSettings one entry of `sites.php` (wrapped here, never passed on)
+     * @param string $sitePosition
+     * @return SiteInsightsSiteEntry
+     * @throws InternalErrorException
      */
-    public function getBudgetSetting(string $key): int|float|array|string|null
+    protected function buildSiteEntry(array $siteSettings, string $sitePosition): SiteInsightsSiteEntry
     {
-        return $this->getBudgetsConfig()[$key] ?? null;
+        $siteInsightsSiteEntry = new SiteInsightsSiteEntry();
+        $siteInsightsSiteEntry->position = $sitePosition;
+        foreach (['key', 'label', 'provider', 'property', 'credentials'] as $stringSettingName) {
+            if (is_string($siteSettings[$stringSettingName] ?? null)) {
+                $siteInsightsSiteEntry->$stringSettingName = $siteSettings[$stringSettingName];
+            }
+        }
+        $siteName = 'SiteInsights.sites[' . $sitePosition . ']';
+        $siteInsightsSiteEntry->brandQueryPatterns = $this->readStringList($siteSettings['brandQueryPatterns'] ?? [], $siteName . '.brandQueryPatterns');
+        $siteInsightsSiteEntry->pageGroups = new SiteInsightsPageGroupEntries();
+        $pageGroupsSettings = $siteSettings['pageGroups'] ?? [];
+        if (!is_array($pageGroupsSettings)) {
+            throw new InternalErrorException($siteName . '.pageGroups must be a list');
+        }
+        foreach ($pageGroupsSettings as $pageGroupPosition => $pageGroupSettings) {
+            if (!is_array($pageGroupSettings)) {
+                throw new InternalErrorException($siteName . '.pageGroups[' . $pageGroupPosition . '] must be a list of settings');
+            }
+            $siteInsightsPageGroupEntry = new SiteInsightsPageGroupEntry();
+            foreach (['key', 'label'] as $stringSettingName) {
+                if (is_string($pageGroupSettings[$stringSettingName] ?? null)) {
+                    $siteInsightsPageGroupEntry->$stringSettingName = $pageGroupSettings[$stringSettingName];
+                }
+            }
+            $siteInsightsPageGroupEntry->pathPatterns = $this->readStringList(
+                $pageGroupSettings['pathPatterns'] ?? [],
+                $siteName . '.pageGroups[' . $pageGroupPosition . '].pathPatterns'
+            );
+            $siteInsightsSiteEntry->pageGroups->add($siteInsightsPageGroupEntry);
+        }
+        return $siteInsightsSiteEntry;
     }
 
     /**
-     * @param string $fileName
-     * @param array $defaults
-     * @return array the file's settings over the defaults (nested settings merged key by key)
+     * @param mixed $configuredList
+     * @param string $settingName
+     * @return string[]
+     * @throws InternalErrorException when the setting is no list of non-empty strings
      */
-    protected function readConfigFile(string $fileName, array $defaults): array
+    protected function readStringList(mixed $configuredList, string $settingName): array
     {
-        $configuredSettings = Config::get('SiteInsights.' . $fileName);
-        return array_replace_recursive($defaults, is_array($configuredSettings) ? $configuredSettings : []);
+        if (!is_array($configuredList)) {
+            throw new InternalErrorException($settingName . ' must be a list of patterns');
+        }
+        $strings = [];
+        foreach ($configuredList as $configuredValue) {
+            if (!is_string($configuredValue) || $configuredValue === '') {
+                throw new InternalErrorException($settingName . ' holds an empty or non-string pattern');
+            }
+            $strings[] = $configuredValue;
+        }
+        return $strings;
     }
 }

@@ -18,5 +18,29 @@ export const siteInsightsApiEnhanced = codegenBaseApi.enhanceEndpoints({
         { type: "Siteinsights" as const },
       ],
     },
+    getAdminSiteInsightsSitesSearchOverviewBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchQueriesBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchPagesBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchCountriesBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchDevicesBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchPageGroupsBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchPageDetailBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
+    getAdminSiteInsightsSitesSearchQueryDetailBySiteKey: {
+      providesTags: [{ type: "Siteinsights" as const, id: "LIST" }],
+    },
   },
 });

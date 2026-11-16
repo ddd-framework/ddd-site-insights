@@ -8,7 +8,7 @@
         "issues": "https://github.com/ddd-framework/ddd-site-insights/issues",
         "source": "https://github.com/ddd-framework/ddd-site-insights"
     },
-    "version": "0.1.0-rc.2",
+    "version": "0.1.0-rc.3",
     "authors": [
         {
             "name": "Marius-Eugen Gerdan",
@@ -17,7 +17,7 @@
     ],
     "require": {
         "php": ">=8.3",
-        "mgamadeus/ddd": "^3.33.2",
+        "mgamadeus/ddd": "^3.33.3",
         "mgamadeus/ddd-argus": "^1.5.1"
     },
     "require-dev": {

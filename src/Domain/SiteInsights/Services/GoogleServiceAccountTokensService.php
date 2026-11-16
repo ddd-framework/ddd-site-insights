@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DDD\Domain\SiteInsights\Services;
 
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsCredentialsConfig;
+use DDD\Domain\SiteInsights\Entities\Config\SiteInsightsCredentialsEntry;
 use DDD\Domain\SiteInsights\Credentials\GoogleAccessTokenGrant;
 use DDD\Domain\SiteInsights\Credentials\GoogleServiceAccountKey;
 use DDD\Domain\SiteInsights\Entities\Errors\SiteInsightsErrorCause;
@@ -118,8 +120,8 @@ class GoogleServiceAccountTokensService extends Service
     protected function readServiceAccountKey(string $credentialsEntryName): GoogleServiceAccountKey
     {
         $credentialsEntry = $this->getCredentialsEntry($credentialsEntryName);
-        $environmentVariableName = $credentialsEntry['envName'] ?? null;
-        if (!is_string($environmentVariableName) || $environmentVariableName === '') {
+        $environmentVariableName = $credentialsEntry->envName ?? null;
+        if ($environmentVariableName === null) {
             throw $this->createKeyUnreadableException($credentialsEntryName, 'the entry names no environment variable (envName)');
         }
         $encodedKey = Config::getEnv($environmentVariableName);
@@ -164,7 +166,7 @@ class GoogleServiceAccountTokensService extends Service
     {
         $assertionLifetimeSeconds = min(
             self::MAX_ASSERTION_LIFETIME_SECONDS,
-            max(60, (int)$this->getCredentialsConfig()['assertionLifetimeSeconds'])
+            max(60, $this->getCredentialsConfig()->assertionLifetimeSeconds)
         );
         return JWT::encode(
             [
@@ -195,7 +197,7 @@ class GoogleServiceAccountTokensService extends Service
                 'form_params' => ['grant_type' => self::GRANT_TYPE, 'assertion' => $assertion],
                 'http_errors' => false,
                 'allow_redirects' => false,
-                'timeout' => (float)$this->getCredentialsConfig()['httpTimeoutSeconds'],
+                'timeout' => (float)$this->getCredentialsConfig()->httpTimeoutSeconds,
                 'connect_timeout' => self::CONNECT_TIMEOUT_SECONDS,
                 'headers' => ['Accept' => 'application/json'],
             ]);
@@ -281,7 +283,7 @@ class GoogleServiceAccountTokensService extends Service
      */
     protected function getScope(string $credentialsEntryName): string
     {
-        $scope = (string)$this->getCredentialsConfig()['scope'];
+        $scope = $this->getCredentialsConfig()->scope;
         if (!str_ends_with($scope, self::READ_ONLY_SCOPE_SUFFIX)) {
             throw $this->createKeyUnreadableException($credentialsEntryName, 'the configured scope is not read-only');
         }
@@ -290,13 +292,13 @@ class GoogleServiceAccountTokensService extends Service
 
     /**
      * @param string $credentialsEntryName
-     * @return array the entry: envName, revision
+     * @return SiteInsightsCredentialsEntry the entry: environment variable name, revision
      * @throws SiteInsightsProviderUnavailableException cause keyUnreadable when the entry is not configured
      */
-    protected function getCredentialsEntry(string $credentialsEntryName): array
+    protected function getCredentialsEntry(string $credentialsEntryName): SiteInsightsCredentialsEntry
     {
-        $credentialsEntry = $this->getCredentialsConfig()['entries'][$credentialsEntryName] ?? null;
-        if (!is_array($credentialsEntry)) {
+        $credentialsEntry = $this->getCredentialsConfig()->entries->findEntryByName($credentialsEntryName);
+        if ($credentialsEntry === null) {
             throw $this->createKeyUnreadableException($credentialsEntryName, 'the entry is not configured');
         }
         return $credentialsEntry;
@@ -309,20 +311,20 @@ class GoogleServiceAccountTokensService extends Service
      */
     protected function getCredentialsRevision(string $credentialsEntryName): int
     {
-        return (int)($this->getCredentialsEntry($credentialsEntryName)['revision'] ?? 1);
+        return $this->getCredentialsEntry($credentialsEntryName)->revision;
     }
 
     protected function getTokenEndpoint(): string
     {
-        return (string)$this->getCredentialsConfig()['tokenEndpoint'];
+        return $this->getCredentialsConfig()->tokenEndpoint;
     }
 
     protected function getTokenSafetyMarginSeconds(): int
     {
-        return (int)$this->getCredentialsConfig()['tokenSafetyMarginSeconds'];
+        return $this->getCredentialsConfig()->tokenSafetyMarginSeconds;
     }
 
-    protected function getCredentialsConfig(): array
+    protected function getCredentialsConfig(): SiteInsightsCredentialsConfig
     {
         /** @var SiteInsightsConfigService $siteInsightsConfigService */
         $siteInsightsConfigService = DDDService::instance()->getService(SiteInsightsConfigService::class);
