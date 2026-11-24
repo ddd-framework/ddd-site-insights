@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0
+
+- First regular release: Composer and npm `@mgamadeus/ddd-site-insights` in lockstep, npm dist-tag `latest`; content as
+  0.1.0-rc.10. From here on: patch for fixes, minor for features and, before 1.0, breaking changes.
+
 ## 0.1.0-rc.9
 
 ### Added
