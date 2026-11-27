@@ -83,3 +83,16 @@ web/                          [npm package: API factory, generated types, window
 
 `composer.json` and `web/package.json` carry the same version; a tag `vX.Y.Z` publishes the npm package
 (`release.yml`, trusted publishing; a pre-release goes to the `next` dist-tag) and Packagist reads the tag.
+
+## Contributing: versions and commit messages
+
+- **A pull request never sets a version.** Leave `version` in `composer.json` and in `package.json` as it is, and add
+  no version heading to `CHANGELOG.md`. Write the changelog entry under `## Unreleased` at the top of the changelog
+  (add the heading when it is missing).
+- **The maintainer assigns the version at release:** bumps `composer.json` / `package.json`, renames `## Unreleased` to
+  the new version and tags it. Versions are regular only (no pre-release suffixes).
+- **Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):** `feat: …`, `fix: …`,
+  `docs: …`, `refactor: …`, `test: …`, `chore: …`, optionally with a scope (`fix(chat): …`); a breaking change carries
+  `!` after the type or a `BREAKING CHANGE:` footer.
+- **Merging a pull request that still carries a version:** keep the version fields of `main`, move its changelog entry
+  under `## Unreleased`, then release as usual.
